@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>기리고</title>
+<link rel="icon" type="image/png" href="hands.png">
+<link rel="apple-touch-icon" href="hands.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@200;300;400&family=Space+Mono:wght@400&display=swap');
+
+:root {
+  --w: 100dvw;
+  --h: 100dvh;
+  --pad: clamp(16px, 5vw, 32px);
+  --logo: clamp(170px, 48vmin, 280px);
+  --cd-ring: clamp(190px, 56vmin, 300px);
+  --accent: rgb(255, 64, 64);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: #000;
+  overflow: hidden;
+  font-family: 'Noto Serif KR', serif;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+
+/* ─── PAGES ─── */
+.page {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .65s ease;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.page.active { opacity: 1; pointer-events: all; }
+
+/* ─── FLASH ─── */
+#flash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #000;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0; pointer-events: none;
+  transition: opacity .6s ease;
+}
+#flash.in { opacity: 0.3; }
+
+/* ─── NOISE ─── */
+#noise {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none;
+  opacity: .03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ══════════════════════════════
+   SPLASH
+══════════════════════════════ */
+#p-splash {
+  gap: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Big title ABOVE the logo */
+.sp-title-top {
+  font-size: clamp(32px, 10vw, 58px);
+  letter-spacing: .28em;
+  color: rgba(255,255,255,.88);
+  font-weight: 300;
+  text-align: center;
+  margin-bottom: clamp(20px, 5vmin, 36px);
+  /* subtle vertical breathing */
+  animation: title-breathe 6s ease-in-out infinite;
+}
+@keyframes title-breathe {
+  0%,100% { opacity: .88; }
+  50%      { opacity: 1;   }
+}
+
+.logo-wrap {
+  position: relative;
+  width: var(--logo); height: var(--logo);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  perspective: 600px;
+}
+
+#logo-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+  width: var(--logo); height: var(--logo);
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+
+/* Tap-to-record text BELOW the logo */
+.sp-tap {
+  margin-top: clamp(24px, 6vmin, 40px);
+  font-size: clamp(10px, 2.6vw, 14px);
+  letter-spacing: .48em;
+  color: rgba(255,255,255,.18);
+  animation: pulse-txt 2.8s ease-in-out infinite;
+  cursor: pointer;
+  text-align: center;
+}
+@keyframes pulse-txt {
+  0%,100% { opacity: 0;    }
+  40%,60% { opacity: 1;    }
+}
+
+/* ══════════════════════════════
+   CAMERA
+══════════════════════════════ */
+#p-cam { padding: 0; }
+#vid {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  filter: grayscale(65%) contrast(1.1) brightness(.72);
+}
+.cam-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    rgba(0,0,0,.7) 0%,
+    transparent 25%,
+    transparent 52%,
+    rgba(0,0,0,.98) 100%);
+  pointer-events: none;
+}
+.cam-scanline {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg,
+    transparent, transparent 2px,
+    rgba(0,0,0,.04) 2px, rgba(0,0,0,.04) 4px);
+  pointer-events: none; opacity: .3;
+}
+.cam-top {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: clamp(48px,12vmin,64px);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--pad); z-index: 10;
+  padding-top: env(safe-area-inset-top);
+}
+.cam-back {
+  background: transparent; border: none;
+  color: rgba(255,255,255,.28);
+  font-family: 'Noto Serif KR', serif;
+  font-size: clamp(9px,2.2vw,11px); letter-spacing: .22em;
+  cursor: pointer; transition: color .3s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cam-back:hover, .cam-back:active { color: rgba(255,255,255,.6); }
+.cam-label { font-size: clamp(9px,2.2vw,11px); letter-spacing: .5em; color: rgba(255,255,255,.22); }
+.cam-rec {
+  font-size: clamp(8px,2vw,10px); letter-spacing: .2em;
+  color: transparent; transition: color .3s;
+  display: flex; align-items: center; gap: 5px;
+}
+.cam-rec.on { color: rgba(255,255,255,.5); }
+.cam-rec-dot { width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: blink 1s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.cam-bot {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 0 var(--pad) calc(env(safe-area-inset-bottom) + clamp(32px,10vmin,56px));
+  display: flex; flex-direction: column; align-items: center; gap: clamp(12px,3vmin,20px);
+  z-index: 10;
+}
+.cam-hint {
+  font-size: clamp(9px,2.2vw,11px); letter-spacing: .35em;
+  color: rgba(255,255,255,.2); text-align: center; min-height: 16px;
+}
+.cam-timer {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(22px,6vmin,32px);
+  color: #fff; letter-spacing: .06em;
+  opacity: 0; transition: opacity .3s;
+  font-variant-numeric: tabular-nums;
+}
+.cam-timer.show { opacity: 1; }
+
+.rec-btn {
+  width: clamp(84px,20vmin,110px); height: clamp(84px,20vmin,110px);
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.18);
+  background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .3s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.rec-btn:active { border-color: rgba(255,255,255,.45); }
+
+#rec-logo {
+  width: 78%;
+  height: 78%;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  opacity: .92;
+}
+
+.rec-btn.recording { border-color: rgba(255,255,255,.45); }
+.rec-btn.recording #rec-logo { opacity: 1; }
+
+.cam-err {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  z-index: 20; background: #000;
+  opacity: 0; pointer-events: none; transition: opacity .5s;
+}
+.cam-err.show { opacity: 1; pointer-events: all; }
+.cam-err p {
+  font-size: clamp(9px,2.2vw,11px); letter-spacing: .2em;
+  color: rgba(255,255,255,.28); text-align: center; line-height: 2.2;
+  max-width: min(260px, 80vw);
+}
+
+/* ══════════════════════════════
+   REVIEW
+══════════════════════════════ */
+#p-review { gap: clamp(16px,4vmin,24px); }
+#prev-vid {
+  width: min(180px, 52vw); aspect-ratio: 9/16;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,.07);
+  filter: grayscale(65%); transform: scaleX(-1);
+}
+.rev-label { font-size: clamp(8px,2vw,10px); letter-spacing: .5em; color: rgba(255,255,255,.18); }
+.rev-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.rev-btn {
+  background: transparent; border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.28);
+  font-family: 'Noto Serif KR', serif;
+  font-size: clamp(9px,2.2vw,11px); letter-spacing: .28em;
+  padding: clamp(9px,2.5vmin,13px) clamp(16px,4vw,22px);
+  cursor: pointer; transition: all .3s;
+  -webkit-tap-highlight-color: transparent;
+}
+.rev-btn:hover, .rev-btn:active { color: rgba(255,255,255,.6); border-color: rgba(255,255,255,.25); }
+.rev-btn.primary { border-color: rgba(255,255,255,.2); color: rgba(255,255,255,.6); }
+.rev-btn.primary:hover, .rev-btn.primary:active { border-color: rgba(255,255,255,.45); color: #fff; }
+
+/* ══════════════════════════════
+   TRANSMIT
+══════════════════════════════ */
+#p-transmit { gap: clamp(20px,5vmin,32px); }
+.tx-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.tx-ring {
+  position: absolute;
+  width: clamp(110px,32vmin,160px); height: clamp(110px,32vmin,160px);
+  border-radius: 50%; border: 1px solid rgba(255,255,255,.1);
+  animation: tx-expand 2.4s ease-out infinite;
+}
+.tx-ring:nth-child(2) { animation-delay: .8s; }
+.tx-ring:nth-child(3) { animation-delay: 1.6s; }
+@keyframes tx-expand {
+  0% { transform: scale(.6); opacity: .4 }
+  100% { transform: scale(2); opacity: 0 }
+}
+#tx-canvas {
+  image-rendering: pixelated; image-rendering: crisp-edges;
+  width: clamp(90px,26vmin,130px); height: clamp(90px,26vmin,130px);
+  display: block; will-change: transform; transform-style: preserve-3d;
+}
+.tx-label { font-size: clamp(8px,2vw,10px); letter-spacing: .45em; color: rgba(255,255,255,.16); }
+.tx-dots { display: flex; gap: 6px; }
+.tx-dots span {
+  width: 3px; height: 3px; border-radius: 50%;
+  background: rgba(255,255,255,.4);
+  animation: td 1.6s ease-in-out infinite;
+}
+.tx-dots span:nth-child(2) { animation-delay: .22s; }
+.tx-dots span:nth-child(3) { animation-delay: .44s; }
+@keyframes td { 0%,80%,100%{opacity:.08} 40%{opacity:1} }
+
+/* ══════════════════════════════
+   RESULT
+══════════════════════════════ */
+#p-result {
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: clamp(40px,12vmin,64px) var(--pad) clamp(40px,12vmin,64px);
+  justify-content: center; align-items: center; gap: clamp(12px,3vmin,20px);
+}
+.res-top { display: flex; flex-direction: column; align-items: center; gap: clamp(10px,2.5vmin,16px); }
+.res-status { font-size: clamp(8px,2vw,10px); letter-spacing: .55em; color: rgba(255,255,255,.16); }
+#res-canvas {
+  image-rendering: pixelated; image-rendering: crisp-edges;
+  width: clamp(80px,22vmin,110px); height: clamp(80px,22vmin,110px);
+  display: block;
+}
+.res-actions { width: min(300px,88vw); display: flex; flex-direction: column; gap: 10px; margin-top: clamp(12px,3vmin,20px); }
+.res-btn {
+  background: transparent; border: 1px solid rgba(255,255,255,.08);
+  color: rgba(255,255,255,.2);
+  font-family: 'Noto Serif KR', serif;
+  font-size: clamp(9px,2.2vw,11px); letter-spacing: .32em;
+  padding: clamp(11px,3vmin,15px); cursor: pointer; transition: all .3s;
+  text-align: center; text-decoration: none; display: block;
+  -webkit-tap-highlight-color: transparent;
+}
+.res-btn:hover, .res-btn:active { color: rgba(255,255,255,.48); border-color: rgba(255,255,255,.18); }
+.granted-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: clamp(8px,2vw,10px); letter-spacing: .38em;
+  color: rgba(255,255,255,.5);
+  padding: 6px 16px; border: 1px solid rgba(255,255,255,.1);
+}
+.granted-star {
+  width: 5px; height: 5px; border-radius: 50%; background: #fff;
+  animation: gstar 2s ease-in-out infinite;
+}
+@keyframes gstar { 0%,100%{opacity:.25;transform:scale(.6)} 50%{opacity:1;transform:scale(1.3)} }
+
+/* ══════════════════════════════
+   COOLDOWN
+══════════════════════════════ */
+#p-cooldown { gap: clamp(20px,5vmin,32px); }
+
+.cd-title { font-size: clamp(8px,2vw,10px); letter-spacing: .55em; color: rgba(255,255,255,.18); text-align: center; }
+
+.cd-ring-wrap {
+  position: relative;
+  width: var(--cd-ring); height: var(--cd-ring);
+}
+.cd-ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.cd-ring-bg { fill: none; stroke: rgba(255,255,255,.06); }
+.cd-ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transition: stroke-dashoffset .8s ease;
+  filter: drop-shadow(0 0 10px rgba(255, 64, 64, .18));
+}
+
+.cd-spin-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.06);
+  animation: cd-orbit 10s linear infinite;
+}
+.cd-spin-dot {
+  position: absolute; top: clamp(4px,1.2vmin,7px); left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.35);
+}
+@keyframes cd-orbit { to { transform: rotate(360deg); } }
+
+.cd-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.cd-time {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(28px, 9vmin, 52px);
+  color: rgba(255, 64, 64, .92);
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+}
+.cd-sub { font-size: clamp(7px,1.8vw,9px); letter-spacing: .45em; color: rgba(255,255,255,.16); }
+
+.cd-note {
+  font-size: clamp(7px,1.8vw,9px); letter-spacing: .28em;
+  color: rgba(255,255,255,.1); text-align: center;
+  max-width: min(220px,80vw); line-height: 2.2;
+}
+
+.cd-check-btn {
+  background: transparent; border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.22);
+  font-family: 'Noto Serif KR', serif;
+  font-size: clamp(9px,2.2vw,11px); letter-spacing: .32em;
+  padding: clamp(10px,2.8vmin,14px) clamp(18px,5vw,28px);
+  cursor: pointer; transition: all .3s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cd-check-btn:hover, .cd-check-btn:active { color: rgba(255,255,255,.5); border-color: rgba(255,255,255,.22); }
+
+.cd-expired-msg {
+  font-size: clamp(8px,2vw,10px); letter-spacing: .4em;
+  color: rgba(255,255,255,.35); text-align: center;
+  animation: pulse-txt 3s ease-in-out infinite;
+  cursor: pointer;
+  display: none;
+}
+.cd-expired-msg.show { display: block; }
+</style>
+</head>
+<body>
+<div id="flash"></div>
+<div id="noise"></div>
+
+<!-- ══ SPLASH ══ -->
+<div class="page" id="p-splash">
+  <!-- Big title ABOVE logo -->
+  <div class="sp-title-top" onclick="tryGoCamera()">기리고</div>
+
+  <!-- Logo -->
+  <div class="logo-wrap" onclick="tryGoCamera()">
+    <canvas id="logo-canvas" width="256" height="256"></canvas>
+  </div>
+
+  <!-- Tap prompt BELOW logo — fades in/out -->
+  <div class="sp-tap" onclick="tryGoCamera()">화면을 탭하세요</div>
+</div>
+
+<!-- ══ CAMERA ══ -->
+<div class="page" id="p-cam">
+  <video id="vid" autoplay playsinline muted></video>
+  <div class="cam-overlay"></div>
+  <div class="cam-scanline"></div>
+  <div class="cam-top">
+    <button class="cam-back" onclick="goSplash()">← 돌아가기</button>
+    <div class="cam-label">기리고</div>
+    <div class="cam-rec" id="cam-rec"><div class="cam-rec-dot"></div>&nbsp;녹화중</div>
+  </div>
+  <div class="cam-bot">
+    <div class="cam-hint" id="cam-hint">탭해서 시작 / 탭해서 종료</div>
+    <div class="cam-timer" id="cam-timer">0:00</div>
+    <button class="rec-btn" id="rec-btn" type="button" onclick="toggleRec(event)">
+      <canvas id="rec-logo" width="128" height="128"></canvas>
+    </button>
+  </div>
+  <div class="cam-err" id="cam-err">
+    <p>카메라 접근 권한이 필요합니다<br><br>브라우저 설정에서 허용 후<br>새로고침 해주세요</p>
+  </div>
+</div>
+
+<!-- ══ REVIEW ══ -->
+<div class="page" id="p-review">
+  <video id="prev-vid" playsinline controls></video>
+  <div class="rev-label">소원이 담겼습니다</div>
+  <div class="rev-actions">
+    <button class="rev-btn" onclick="retake()">다시 찍기</button>
+    <button class="rev-btn primary" onclick="transmit()">소원 올리기</button>
+  </div>
+</div>
+
+<!-- ══ TRANSMIT ══ -->
+<div class="page" id="p-transmit">
+  <div class="tx-wrap">
+    <div class="tx-ring"></div><div class="tx-ring"></div><div class="tx-ring"></div>
+    <canvas id="tx-canvas" width="256" height="256"></canvas>
+  </div>
+  <div class="tx-label">소원을 전달하는 중</div>
+  <div class="tx-dots"><span></span><span></span><span></span></div>
+</div>
+
+<!-- ══ RESULT ══ -->
+<div class="page" id="p-result">
+  <div class="res-top">
+    <div class="res-status" id="res-status-text">소원이 전달되었습니다</div>
+    <canvas id="res-canvas" width="256" height="256"></canvas>
+    <div id="granted-badge-wrap"></div>
+  </div>
+  <div class="res-actions">
+    <a id="dl-link" class="res-btn" download="girigo.webm">영상 저장하기</a>
+    <button class="res-btn" onclick="goSplash()">처음으로</button>
+  </div>
+</div>
+
+<!-- ══ COOLDOWN ══ -->
+<div class="page" id="p-cooldown">
+  <div class="cd-title">소원을 이루어지길 기다리는 중</div>
+
+  <div class="cd-ring-wrap">
+    <svg class="cd-ring-svg" viewBox="0 0 200 200">
+      <circle class="cd-ring-bg" cx="100" cy="100" r="88" stroke-width="2.5"/>
+      <circle class="cd-ring-fill" id="cd-arc"
+        cx="100" cy="100" r="88"
+        stroke-width="2.5"
+        stroke-dasharray="553"
+        stroke-dashoffset="553"
+        transform="rotate(-90 100 100)"/>
+    </svg>
+    <div class="cd-spin-ring"><div class="cd-spin-dot"></div></div>
+    <div class="cd-center">
+      <div class="cd-time" id="cd-time">00:00:00</div>
+      <div class="cd-sub">남은 시간</div>
+    </div>
+  </div>
+
+  <div class="cd-note">소원은 24시간에 한 번 빌 수 있습니다</div>
+  <button class="cd-check-btn" onclick="checkGranted()">소원 이루어졌나요?</button>
+  <div class="cd-expired-msg" id="cd-expired" onclick="tryGoCamera()">소원을 다시 빌 수 있습니다 →</div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+  PIXEL HAND MASK — 32×32 grid (praying hands)
+══════════════════════════════════════════════════════ */
+function buildMask() {
+  const m = new Uint8Array(32 * 32);
+  const L = [
+    [1,12,13],[1,14,16],
+    [2,11,16],[3,10,16],[4,10,16],
+    [5,9,16],[6,9,16],[7,9,16],[8,9,16],
+    [9,8,16],[10,8,16],[11,8,16],[12,8,16],
+    [13,7,16],[14,7,16],[15,7,16],[16,7,16],[17,7,16],[18,7,16],
+    [19,8,16],[20,8,16],[21,8,16],[22,8,16],[23,8,16],
+    [24,9,16],[25,9,16],[26,9,16],[27,9,16],[28,9,16],[29,9,16],[30,9,16],[31,9,16]
+  ];
+
+  const SEAM_SHIFT = 1;
+  function fillSeg(row, cs, ce) {
+    for (let c = cs; c < ce; c++) m[row * 32 + c] = 1;
+  }
+  function mirrorSeg(cs, ce) {
+    const mcs = (32 - ce) + SEAM_SHIFT;
+    const mce = (32 - cs) + SEAM_SHIFT;
+    return [mcs, mce];
+  }
+  function mirrorCol(col) {
+    return (31 - col) + SEAM_SHIFT;
+  }
+  function carve(row, col) {
+    if (row < 0 || row >= 32 || col < 0 || col >= 32) return;
+    m[row * 32 + col] = 0;
+  }
+
+  L.forEach(([row, cs, ce]) => {
+    fillSeg(row, cs, ce);
+    const [mcs, mce] = mirrorSeg(cs, ce);
+    fillSeg(row, mcs, mce);
+  });
+
+  for (let row = 2; row <= 9; row++) {
+    [11, 13].forEach((col) => {
+      carve(row, col);
+      carve(row, mirrorCol(col));
+    });
+  }
+  for (let i = 0; i < 5; i++) {
+    const row = 13 + i;
+    const col = 14 - i;
+    carve(row, col);
+    carve(row, mirrorCol(col));
+  }
+  return m;
+}
+const MASK = buildMask();
+
+/* ══════════════════════════════════════════════════════
+   OPTIONAL IMAGE ASSET
+══════════════════════════════════════════════════════ */
+const HAND_ASSET_CANDIDATES = ['./hands.png', './hand.png'];
+const FLASH_ASSET_CANDIDATES = ['./flash.png', './hands.png'];
+let HAND_IMG = null;
+let HAND_PREPARED = null;
+let HAND_READY = false;
+let STARTUP_FLASH_DONE = false;
+let STARTUP_FLASH_LAST_AT = 0;
+
+function triggerStartupFlash() {
+  const now = Date.now();
+  if (now - STARTUP_FLASH_LAST_AT < 900) return;
+  STARTUP_FLASH_LAST_AT = now;
+  STARTUP_FLASH_DONE = false;
+  runStartupFlashOnce();
+}
+
+function prepareHandAsset(img) {
+  const work = document.createElement('canvas');
+  work.width = 256; work.height = 256;
+  const wctx = work.getContext('2d', { willReadFrequently: true });
+  wctx.clearRect(0, 0, work.width, work.height);
+  wctx.imageSmoothingEnabled = false;
+
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  if (iw > 0 && ih > 0) {
+    const sc = Math.min(work.width / iw, work.height / ih);
+    const dw = Math.round(iw * sc);
+    const dh = Math.round(ih * sc);
+    const dx = Math.round((work.width - dw) / 2);
+    const dy = Math.round((work.height - dh) / 2);
+    wctx.drawImage(img, dx, dy, dw, dh);
+  } else {
+    wctx.drawImage(img, 0, 0, work.width, work.height);
+  }
+
+  try {
+    const im = wctx.getImageData(0, 0, work.width, work.height);
+    const d = im.data;
+    const KEEP_T = 190;
+    let minX = 255, minY = 255, maxX = 0, maxY = 0;
+    let found = false;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3];
+      if (a === 0) continue;
+      const mx = Math.max(r, g, b);
+      if (mx < KEEP_T) { d[i + 3] = 0; continue; }
+      d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255;
+      const px = ((i / 4) % 256) | 0;
+      const py = (((i / 4) / 256) | 0);
+      found = true;
+      if (px < minX) minX = px; if (py < minY) minY = py;
+      if (px > maxX) maxX = px; if (py > maxY) maxY = py;
+    }
+    wctx.putImageData(im, 0, 0);
+    if (!found) return work;
+
+    const bw = Math.max(1, maxX - minX + 1);
+    const bh = Math.max(1, maxY - minY + 1);
+    const out = document.createElement('canvas');
+    out.width = 256; out.height = 256;
+    const octx = out.getContext('2d', { willReadFrequently: true });
+    octx.clearRect(0, 0, out.width, out.height);
+    octx.imageSmoothingEnabled = false;
+    const PAD = 10;
+    const sc2 = Math.min((256 - PAD * 2) / bw, (256 - PAD * 2) / bh);
+    const dw2 = Math.round(bw * sc2); const dh2 = Math.round(bh * sc2);
+    const dx2 = Math.round((256 - dw2) / 2); const dy2 = Math.round((256 - dh2) / 2);
+    octx.drawImage(work, minX, minY, bw, bh, dx2, dy2, dw2, dh2);
+    return out;
+  } catch {}
+  return work;
+}
+
+function loadHandAsset() {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => {
+      HAND_IMG = img;
+      HAND_PREPARED = prepareHandAsset(img);
+      HAND_READY = true;
+      resolve(true);
+    };
+    let idx = 0;
+    img.onerror = () => {
+      idx++;
+      if (idx >= HAND_ASSET_CANDIDATES.length) return resolve(false);
+      img.src = HAND_ASSET_CANDIDATES[idx];
+    };
+    img.src = HAND_ASSET_CANDIDATES[idx];
+  });
+}
+
+function renderRecLogo() {
+  const c = document.getElementById('rec-logo');
+  if (!c) return;
+  const size = c.width || 128;
+  renderStatic(c, size);
+}
+
+function setFaviconFromCanvas(canvas) {
+  try {
+    const url = canvas.toDataURL('image/png');
+    let link = document.querySelector('link[rel="icon"]');
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.type = 'image/png'; link.href = url;
+  } catch {}
+}
+
+function buildAppIconFromHand() {
+  if (!HAND_READY || !HAND_PREPARED) return;
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 128;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.strokeStyle = 'rgba(255, 64, 64, .85)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(64, 64, 54, 0, Math.PI * 2); ctx.stroke();
+  const dw = 88; const dh = 88;
+  ctx.drawImage(HAND_PREPARED, 0, 0, 256, 256, (128 - dw) / 2, (128 - dh) / 2, dw, dh);
+  setFaviconFromCanvas(c);
+}
+
+function runStartupFlashOnce() {
+  const fl = document.getElementById('flash');
+  if (!fl) return;
+  if (STARTUP_FLASH_DONE) return;
+  STARTUP_FLASH_DONE = true;
+  const img = new Image();
+  let idx = 0;
+  img.onload = () => {
+    fl.style.backgroundImage = `url('${FLASH_ASSET_CANDIDATES[idx]}')`;
+    requestAnimationFrame(() => {
+      fl.classList.add('in');
+      setTimeout(() => { fl.classList.remove('in'); setTimeout(() => { fl.style.backgroundImage = ''; }, 160); }, 500);
+    });
+  };
+  img.onerror = () => {
+    idx++;
+    if (idx >= FLASH_ASSET_CANDIDATES.length) return;
+    img.src = FLASH_ASSET_CANDIDATES[idx];
+  };
+  img.src = FLASH_ASSET_CANDIDATES[idx];
+}
+
+/* ══════════════════════════════════════════════════════
+   CANVAS RENDERER
+══════════════════════════════════════════════════════ */
+function renderHands(ctx, size, splitPx, alpha) {
+  ctx.clearRect(0,0,size,size);
+  if(alpha < 0.01) return;
+
+  if (HAND_READY && HAND_PREPARED) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.imageSmoothingEnabled = false;
+    const halfW = HAND_PREPARED.width / 2;
+    const h = HAND_PREPARED.height;
+    ctx.drawImage(HAND_PREPARED, 0, 0, halfW, h, -splitPx, 0, size / 2, size);
+    ctx.drawImage(HAND_PREPARED, halfW, 0, halfW, h, size / 2 + splitPx, 0, size / 2, size);
+    ctx.restore();
+    return;
+  }
+
+  const sc = size / 32;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#fff';
+  for(let row=0;row<32;row++) {
+    for(let col=0;col<32;col++) {
+      if(!MASK[row*32+col]) continue;
+      const isLeft = col < 16;
+      const ox = isLeft ? -splitPx : splitPx;
+      ctx.fillRect(col*sc + ox, row*sc, sc, sc);
+    }
+  }
+  ctx.restore();
+}
+
+const PERSP = 600;
+
+function flipTransform(angleY) {
+  const c = Math.cos(angleY);
+  const shade = Math.abs(c);
+  return { scaleX: c, shade };
+}
+
+/* ══════════════════════════════════════════════════════
+   ANIMATION ENGINE
+══════════════════════════════════════════════════════ */
+let RAF = null;
+let phase = 'idle';
+let phaseT = 0;
+const SPLIT_START = 64;
+const SPLIT_DUR = 120;
+let splitAmt = SPLIT_START;
+let flipAngle = 0;
+let activeCanvases = [];
+
+function stopAnim() {
+  if(RAF) { cancelAnimationFrame(RAF); RAF=null; }
+  activeCanvases.forEach(({el})=>{ el.style.transform=''; el.style.opacity=''; });
+  activeCanvases=[];
+}
+
+function startAnim(canvasList, loop) {
+  stopAnim();
+  activeCanvases = canvasList;
+  phase = 'split-join';
+  phaseT = 0;
+  splitAmt = SPLIT_START;
+  flipAngle = 0;
+
+  function frame() {
+    phaseT++;
+    activeCanvases.forEach(({el,size})=>{
+      const ctx = el.getContext('2d');
+      if(phase === 'split-join') {
+        const dur = SPLIT_DUR;
+        const prog = Math.min(phaseT/dur,1);
+        const ease = 1 - Math.pow(1-prog,3);
+        const sp = SPLIT_START*(1-ease);
+        renderHands(ctx, size, sp, 1);
+        el.style.transform = '';
+        if(prog>=1) { phase='flip-spin'; phaseT=0; flipAngle=0; }
+      } else if(phase === 'flip-spin') {
+        flipAngle += 0.065;
+        const {shade} = flipTransform(flipAngle);
+        el.style.transform = `perspective(${PERSP}px) rotateY(${flipAngle}rad)`;
+        el.style.opacity = Math.max(0.18, Math.abs(shade)).toString();
+        renderHands(ctx, size, 0, 1);
+        if(flipAngle >= Math.PI*2) {
+          flipAngle=0;
+          el.style.transform='';
+          el.style.opacity='1';
+          if(loop) { phase='split-join'; phaseT=0; splitAmt=SPLIT_START; }
+          else { phase='idle'; phaseT=0; }
+        }
+      }
+    });
+    RAF = requestAnimationFrame(frame);
+  }
+  RAF = requestAnimationFrame(frame);
+}
+
+function startFlipLoop(canvasList) {
+  stopAnim();
+  activeCanvases = canvasList;
+  phase = 'flip-spin';
+  phaseT = 0;
+  flipAngle = 0;
+  function frame() {
+    flipAngle += 0.055;
+    activeCanvases.forEach(({el,size})=>{
+      const ctx = el.getContext('2d');
+      renderHands(ctx, size, 0, 1);
+      el.style.transform = `perspective(${PERSP}px) rotateY(${flipAngle}rad)`;
+      const shade = Math.abs(Math.cos(flipAngle));
+      el.style.opacity = Math.max(0.18, shade).toString();
+    });
+    if(flipAngle >= Math.PI*2) flipAngle=0;
+    RAF = requestAnimationFrame(frame);
+  }
+  RAF = requestAnimationFrame(frame);
+}
+
+function renderStatic(canvas, size) {
+  const ctx = canvas.getContext('2d');
+  renderHands(ctx, size, 0, 1);
+  canvas.style.transform=''; canvas.style.opacity='1';
+}
+
+/* ══════════════════════════════════════════════════════
+   PAGE SYSTEM
+══════════════════════════════════════════════════════ */
+const ALL_PAGES=['p-splash','p-cam','p-review','p-transmit','p-result','p-cooldown'];
+
+/* ══════════════════════════════════════════════════════
+  MAIN PAGE SOUND (girigo.mp3)
+  — plays ONLY on splash page
+  — NOT during recording or while the recording timer is showing
+  — tries autoplay immediately; retries on first user gesture
+══════════════════════════════════════════════════════ */
+const MAIN_BGM_SRC = './girigo.mp3';
+let MAIN_BGM = null;
+let MAIN_BGM_DISABLED = false;
+let MAIN_BGM_CREATED = false;
+let ACTIVE_PAGE = 'p-splash';
+
+function isRecordingActive() {
+  return !!(recorder && recorder.state === 'recording');
+}
+
+function isRecordingTimerVisible() {
+  const t = document.getElementById('cam-timer');
+  return !!(t && t.classList.contains('show'));
+}
+
+function mainBgmAllowed() {
+  if (ACTIVE_PAGE !== 'p-splash') return false;
+  if (isRecordingActive()) return false;
+  if (isRecordingTimerVisible()) return false;
+  return true;
+}
+
+function ensureMainBgm() {
+  if (MAIN_BGM_CREATED || MAIN_BGM_DISABLED) return;
+  MAIN_BGM_CREATED = true;
+  try {
+    MAIN_BGM = new Audio(MAIN_BGM_SRC);
+    MAIN_BGM.loop = true;
+    MAIN_BGM.preload = 'auto';
+    MAIN_BGM.volume = 0.8;
+    MAIN_BGM.addEventListener('error', () => {
+      MAIN_BGM_DISABLED = true;
+      try { MAIN_BGM.pause(); } catch {}
+      MAIN_BGM = null;
+    }, { once: true });
+  } catch {
+    MAIN_BGM_DISABLED = true;
+  }
+}
+
+function pauseMainBgmHard() {
+  if (!MAIN_BGM) return;
+  try { MAIN_BGM.pause(); MAIN_BGM.currentTime = 0; MAIN_BGM.muted = false; } catch {}
+}
+
+/**
+ * Attempt to play. First tries audible; if blocked by autoplay policy,
+ * starts muted then immediately unmutes (satisfies most browsers).
+ */
+function tryPlayMainBgm() {
+  if (MAIN_BGM_DISABLED || !MAIN_BGM) return;
+  if (!mainBgmAllowed()) return;
+  if (!MAIN_BGM.paused) return; // already playing
+
+  MAIN_BGM.muted = false;
+  const p1 = MAIN_BGM.play();
+  if (p1 && typeof p1.catch === 'function') {
+    p1.catch(() => {
+      if (!mainBgmAllowed()) return;
+      // Muted autoplay is allowed by most browsers even without gesture.
+      MAIN_BGM.muted = true;
+      const p2 = MAIN_BGM.play();
+      if (p2 && typeof p2.then === 'function') {
+        p2.then(() => {
+          // Unmute after a brief moment once audio context is running.
+          setTimeout(() => { if (MAIN_BGM && mainBgmAllowed()) MAIN_BGM.muted = false; }, 80);
+        }).catch(() => {});
+      }
+    });
+  }
+}
+
+function updateMainBgmForPage() {
+  if (MAIN_BGM_DISABLED) return;
+  ensureMainBgm();
+  if (!MAIN_BGM) return;
+  if (mainBgmAllowed()) {
+    tryPlayMainBgm();
+  } else {
+    pauseMainBgmHard();
+  }
+}
+
+// Retry on first user interaction (covers strict autoplay policies).
+let BGM_GESTURE_ARMED = true;
+window.addEventListener('pointerdown', () => {
+  if (BGM_GESTURE_ARMED) {
+    BGM_GESTURE_ARMED = false;
+    updateMainBgmForPage();
+  }
+}, { passive: true });
+
+function show(id, cb) {
+  ALL_PAGES.forEach(p=>document.getElementById(p).classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  ACTIVE_PAGE = id;
+  updateMainBgmForPage();
+  cb&&cb();
+}
+
+/* ══════════════════════════════════════════════════════
+   COOLDOWN LOGIC
+══════════════════════════════════════════════════════ */
+const COOLDOWN_MS = 24*60*60*1000;
+let cdTicker = null;
+
+function getCooldownRemaining() {
+  const ts = parseInt(localStorage.getItem('girigo_ts')||'0');
+  if(!ts) return 0;
+  return Math.max(0, COOLDOWN_MS - (Date.now()-ts));
+}
+
+function setCooldownNow() {
+  localStorage.setItem('girigo_ts', Date.now().toString());
+  localStorage.removeItem('girigo_granted');
+}
+
+function isInCooldown() {
+  return getCooldownRemaining() > 0;
+}
+
+function startCooldownUI() {
+  if(cdTicker) clearInterval(cdTicker);
+  updateCooldownUI();
+  cdTicker = setInterval(updateCooldownUI, 1000);
+}
+
+function updateCooldownUI() {
+  const rem = getCooldownRemaining();
+  const expiredEl = document.getElementById('cd-expired');
+  const timeEl = document.getElementById('cd-time');
+  const arc = document.getElementById('cd-arc');
+
+  if(rem <= 0) {
+    clearInterval(cdTicker);
+    timeEl.textContent = '00:00:00';
+    arc.style.strokeDashoffset = '0';
+    expiredEl.classList.add('show');
+    return;
+  }
+  expiredEl.classList.remove('show');
+
+  const h = Math.floor(rem/3600000);
+  const m = Math.floor((rem%3600000)/60000);
+  const s = Math.floor((rem%60000)/1000);
+  timeEl.textContent = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+
+  const pct = 1-(rem/COOLDOWN_MS);
+  arc.style.strokeDashoffset = (553*(1-pct)).toString();
+}
+
+/* ══════════════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════════════ */
+function goSplash() {
+  killStream();
+  show('p-splash', ()=>{
+    const c = document.getElementById('logo-canvas');
+    c.width=256; c.height=256;
+    startAnim([{el:c,size:256}], true);
+  });
+}
+
+function tryGoCamera() {
+  if(isInCooldown()) { goCooldown(); return; }
+  show('p-cam', async()=>{
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:true});
+      document.getElementById('vid').srcObject=stream;
+    }catch(e){
+      document.getElementById('cam-err').classList.add('show');
+    }
+  });
+}
+
+function goCooldown() {
+  show('p-cooldown', ()=>{
+    startCooldownUI();
+  });
+}
+
+function checkGranted() {
+  const ts = parseInt(localStorage.getItem('girigo_ts')||'0');
+  const elapsed = Date.now()-ts;
+  const testMode = elapsed > 30000;
+  const granted = testMode && Math.random()>0.45;
+
+  if(granted){
+    localStorage.removeItem('girigo_ts');
+    localStorage.setItem('girigo_granted','1');
+    if(cdTicker) clearInterval(cdTicker);
+    showResult(true);
+  } else {
+    const el=document.getElementById('cd-time');
+    el.style.color='rgba(255, 64, 64, .98)';
+    el.style.transition='color .1s';
+    setTimeout(()=>{ el.style.color='rgba(255, 64, 64, .92)'; el.style.transition='color .6s'; },500);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   RECORDING
+══════════════════════════════════════════════════════ */
+let stream=null, recorder=null, chunks=[], blob=null, blobURL=null;
+let recSec=0, recTick=null;
+
+function killStream(){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+}
+
+function startRec(e){
+  if(!stream)return;
+  chunks=[];
+  const mime=['video/webm;codecs=vp9,opus','video/webm','video/mp4'].find(m=>MediaRecorder.isTypeSupported(m))||'';
+  recorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});
+  recorder.ondataavailable=ev=>{if(ev.data&&ev.data.size>0)chunks.push(ev.data);};
+  recorder.start(100);
+  document.getElementById('rec-btn').classList.add('recording');
+  document.getElementById('cam-rec').classList.add('on');
+  document.getElementById('cam-hint').textContent='소원을 말하세요…';
+  recSec=0; showTimer();
+  recTick=setInterval(()=>{ recSec++; showTimer(); if(recSec>=30)stopRec(); },1000);
+  // Ensure BGM is paused now that recording/timer is active
+  updateMainBgmForPage();
+}
+
+function stopRec(e){
+  if(!recorder||recorder.state==='inactive')return;
+  recorder.stop();
+  clearInterval(recTick);
+  document.getElementById('rec-btn').classList.remove('recording');
+  document.getElementById('cam-rec').classList.remove('on');
+  document.getElementById('cam-timer').classList.remove('show');
+  document.getElementById('cam-hint').textContent='탭해서 시작 / 탭해서 종료';
+  recorder.onstop=()=>{
+    const type=chunks[0]?.type||'video/webm';
+    blob=new Blob(chunks,{type});
+    if(blobURL)URL.revokeObjectURL(blobURL);
+    blobURL=URL.createObjectURL(blob);
+    document.getElementById('prev-vid').src=blobURL;
+    show('p-review');
+  };
+}
+
+function toggleRec(e){
+  if(e) e.preventDefault();
+  if(!stream) return;
+  if(!recorder || recorder.state==='inactive') startRec();
+  else stopRec();
+}
+
+function showTimer(){
+  const el=document.getElementById('cam-timer');
+  el.classList.add('show');
+  const m=Math.floor(recSec/60),s=recSec%60;
+  el.textContent=`${m}:${s.toString().padStart(2,'0')}`;
+  // Immediately silence BGM when timer appears (belt-and-suspenders)
+  updateMainBgmForPage();
+}
+
+function retake(){ show('p-cam'); }
+
+/* ══════════════════════════════════════════════════════
+   TRANSMIT → RESULT
+══════════════════════════════════════════════════════ */
+function transmit(){
+  killStream();
+  setCooldownNow();
+  show('p-transmit', ()=>{
+    const tc=document.getElementById('tx-canvas');
+    tc.width=256; tc.height=256;
+    startFlipLoop([{el:tc,size:256}]);
+  });
+  setTimeout(()=>{
+    document.getElementById('dl-link').href=blobURL||'#';
+    showResult(false);
+  }, 3200);
+}
+
+function showResult(granted){
+  show('p-result',()=>{
+    stopAnim();
+    const rc=document.getElementById('res-canvas');
+    rc.width=256; rc.height=256;
+    renderStatic(rc,256);
+    document.getElementById('res-status-text').textContent =
+      granted ? '소원이 이루어졌습니다' : '소원이 전달되었습니다';
+    document.getElementById('granted-badge-wrap').innerHTML = granted
+      ? `<div class="granted-badge"><div class="granted-star"></div>이루어짐<div class="granted-star" style="animation-delay:.5s"></div></div>`
+      : `<div style="font-size:clamp(7px,1.8vw,9px);letter-spacing:.35em;color:rgba(255,255,255,.12);">24시간 후 확인하세요</div>`;
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', ()=>{
+  // Pre-create BGM element immediately so the browser can start buffering.
+  ensureMainBgm();
+
+  // Non-blocking: try to load external PNG asset if present.
+  loadHandAsset().finally(()=>{
+    renderRecLogo();
+    buildAppIconFromHand();
+  });
+  renderRecLogo();
+
+  triggerStartupFlash();
+
+  if(isInCooldown()){
+    show('p-cooldown', ()=>{ startCooldownUI(); });
+  } else {
+    show('p-splash', ()=>{
+      const c=document.getElementById('logo-canvas');
+      c.width=256; c.height=256;
+      startAnim([{el:c,size:256}],true);
+      // Attempt autoplay now — will succeed on some browsers, fail silently on others
+      // until the first user gesture fires the window pointerdown handler above.
+      tryPlayMainBgm();
+    });
+  }
+});
+
+window.addEventListener('pageshow', () => {
+  triggerStartupFlash();
+  updateMainBgmForPage();
+});
+</script>
+</body>
+</html>
