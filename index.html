@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>기리고</title>
-<link rel="icon" type="image/png" href="hands.png">
-<link rel="apple-touch-icon" href="hands.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@200;300;400&family=Space+Mono:wght@400&display=swap');
 
@@ -511,7 +511,6 @@ html, body {
 
 <!-- ══ COOLDOWN ══ -->
 <div class="page" id="p-cooldown">
-  <div class="cd-title">소원을 이루어지길 기다리는 중</div>
   <div class="cd-ring-wrap">
     <svg class="cd-ring-svg" viewBox="0 0 200 200">
       <circle class="cd-ring-bg" cx="100" cy="100" r="88" stroke-width="2.5"/>
@@ -525,11 +524,8 @@ html, body {
     <div class="cd-spin-ring"><div class="cd-spin-dot"></div></div>
     <div class="cd-center">
       <div class="cd-time" id="cd-time">00:00:00</div>
-      <div class="cd-sub">남은 시간</div>
     </div>
   </div>
-  <div class="cd-note">소원은 24시간에 한 번 빌 수 있습니다</div>
-  <button class="cd-check-btn" onclick="checkGranted()">소원 이루어졌나요?</button>
   <div class="cd-expired-msg" id="cd-expired" onclick="tryGoCamera()">소원을 다시 빌 수 있습니다 →</div>
 </div>
 
@@ -569,7 +565,7 @@ const MASK=buildMask();
 /* ══════════════════════════════════════════════════════
    OPTIONAL IMAGE ASSET
 ══════════════════════════════════════════════════════ */
-const HAND_ASSET_CANDIDATES=['./hands.png','./hand.png'];
+const HAND_ASSET_CANDIDATES=['./icon.png','./hands.png','./hand.png'];
 const FLASH_ASSET_CANDIDATES=['./flash.png','./hands.png'];
 let HAND_IMG=null,HAND_PREPARED=null,HAND_READY=false;
 let STARTUP_FLASH_DONE=false,STARTUP_FLASH_LAST_AT=0;
@@ -761,13 +757,21 @@ const ALL_PAGES=['p-splash','p-cam','p-review','p-transmit','p-result','p-cooldo
 ══════════════════════════════════════════════════════ */
 let HAS_SUBMITTED = !!localStorage.getItem('girigo_ts');
 
-function setRedVeil(on){
-  document.getElementById('red-veil').classList.toggle('on', on);
+function setRedVeil(on, opacity = 1){
+  const veil = document.getElementById('red-veil');
+  veil.classList.toggle('on', on);
+  veil.style.opacity = on ? opacity : 0;
 }
 
 function updateRedVeil(pageId){
   const on = pageId === 'p-cooldown' || (pageId === 'p-splash' && HAS_SUBMITTED);
-  setRedVeil(on);
+  if (on && pageId === 'p-cooldown') {
+    const rem = getCooldownRemaining();
+    const opacity = rem > 0 ? rem / COOLDOWN_MS : 0;
+    setRedVeil(true, opacity);
+  } else {
+    setRedVeil(on);
+  }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -866,13 +870,16 @@ function updateCooldownUI(){
   const arc=document.getElementById('cd-arc');
   if(rem<=0){
     clearInterval(cdTicker);timeEl.textContent='00:00:00';
-    arc.style.strokeDashoffset='0';expiredEl.classList.add('show');return;
+    arc.style.strokeDashoffset='0';expiredEl.classList.add('show');
+    updateRedVeil('p-cooldown'); // update veil when expired
+    return;
   }
   expiredEl.classList.remove('show');
   const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);
   timeEl.textContent=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
   const pct=1-(rem/COOLDOWN_MS);
   arc.style.strokeDashoffset=(553*(1-pct)).toString();
+  updateRedVeil('p-cooldown'); // update veil opacity
 }
 
 /* ══════════════════════════════════════════════════════
@@ -981,9 +988,9 @@ function showResult(granted){
   show('p-result',()=>{
     stopAnim();
     const rc=document.getElementById('res-canvas');rc.width=256;rc.height=256;renderStatic(rc,256);
-    document.getElementById('res-status-text').textContent=granted?'소원이 이루어졌습니다':'소원이 전달되었습니다';
+    document.getElementById('res-status-text').textContent='소원이 전달되었습니다';
     document.getElementById('granted-badge-wrap').innerHTML=granted
-      ?`<div class="granted-badge"><div class="granted-star"></div>이루어짐<div class="granted-star" style="animation-delay:.5s"></div></div>`
+      ?`<div class="granted-badge"><div class="granted-star"></div><div class="granted-star" style="animation-delay:.5s"></div></div>`
       :`<div style="font-size:clamp(12px,3vw,15px);letter-spacing:.35em;color:rgba(255,200,200,.65);">24시간 후 확인하세요</div>`;
   });
 }
