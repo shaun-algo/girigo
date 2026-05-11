@@ -51,7 +51,8 @@ html, body {
   opacity: 0; pointer-events: none;
   transition: opacity .6s ease;
 }
-#flash.in { opacity: 0.3; }
+#flash.in { opacity: 0.5;}
+
 
 /* ─── NOISE ─── */
 #noise {
@@ -71,13 +72,12 @@ html, body {
 
 /* Big title ABOVE the logo */
 .sp-title-top {
-  font-size: clamp(32px, 10vw, 58px);
+  font-size: clamp(72px, 22vw, 130px);
   letter-spacing: .28em;
   color: rgba(255,255,255,.88);
   font-weight: 300;
   text-align: center;
   margin-bottom: clamp(20px, 5vmin, 36px);
-  /* subtle vertical breathing */
   animation: title-breathe 6s ease-in-out infinite;
 }
 @keyframes title-breathe {
@@ -105,9 +105,9 @@ html, body {
 /* Tap-to-record text BELOW the logo */
 .sp-tap {
   margin-top: clamp(24px, 6vmin, 40px);
-  font-size: clamp(10px, 2.6vw, 14px);
-  letter-spacing: .48em;
-  color: rgba(255,255,255,.18);
+  font-size: clamp(18px, 5vw, 28px);
+  letter-spacing: .38em;
+  color: rgba(255,255,255,.55);
   animation: pulse-txt 2.8s ease-in-out infinite;
   cursor: pointer;
   text-align: center;
@@ -402,15 +402,10 @@ html, body {
 
 <!-- ══ SPLASH ══ -->
 <div class="page" id="p-splash">
-  <!-- Big title ABOVE logo -->
   <div class="sp-title-top" onclick="tryGoCamera()">기리고</div>
-
-  <!-- Logo -->
   <div class="logo-wrap" onclick="tryGoCamera()">
     <canvas id="logo-canvas" width="256" height="256"></canvas>
   </div>
-
-  <!-- Tap prompt BELOW logo — fades in/out -->
   <div class="sp-tap" onclick="tryGoCamera()">화면을 탭하세요</div>
 </div>
 
@@ -472,7 +467,6 @@ html, body {
 <!-- ══ COOLDOWN ══ -->
 <div class="page" id="p-cooldown">
   <div class="cd-title">소원을 이루어지길 기다리는 중</div>
-
   <div class="cd-ring-wrap">
     <svg class="cd-ring-svg" viewBox="0 0 200 200">
       <circle class="cd-ring-bg" cx="100" cy="100" r="88" stroke-width="2.5"/>
@@ -489,7 +483,6 @@ html, body {
       <div class="cd-sub">남은 시간</div>
     </div>
   </div>
-
   <div class="cd-note">소원은 24시간에 한 번 빌 수 있습니다</div>
   <button class="cd-check-btn" onclick="checkGranted()">소원 이루어졌나요?</button>
   <div class="cd-expired-msg" id="cd-expired" onclick="tryGoCamera()">소원을 다시 빌 수 있습니다 →</div>
@@ -835,15 +828,17 @@ function renderStatic(canvas, size) {
 const ALL_PAGES=['p-splash','p-cam','p-review','p-transmit','p-result','p-cooldown'];
 
 /* ══════════════════════════════════════════════════════
-  MAIN PAGE SOUND (girigo.mp3)
-  — plays ONLY on splash page
-  — NOT during recording or while the recording timer is showing
-  — tries autoplay immediately; retries on first user gesture
+  AUDIO — BGM with AudioContext unlock strategy
+  Works around strict autoplay policies on mobile/desktop:
+  1. On load: create AudioContext + Audio element, attempt silent play
+  2. On first user gesture: resume AudioContext, unmute, play
+  3. On page visibility change: sync play/pause state
 ══════════════════════════════════════════════════════ */
 const MAIN_BGM_SRC = './girigo.mp3';
 let MAIN_BGM = null;
 let MAIN_BGM_DISABLED = false;
-let MAIN_BGM_CREATED = false;
+let AUDIO_CTX = null;
+let AUDIO_UNLOCKED = false;
 let ACTIVE_PAGE = 'p-splash';
 
 function isRecordingActive() {
@@ -862,9 +857,15 @@ function mainBgmAllowed() {
   return true;
 }
 
+function ensureAudioCtx() {
+  if (AUDIO_CTX) return;
+  try {
+    AUDIO_CTX = new (window.AudioContext || window.webkitAudioContext)();
+  } catch(e) {}
+}
+
 function ensureMainBgm() {
-  if (MAIN_BGM_CREATED || MAIN_BGM_DISABLED) return;
-  MAIN_BGM_CREATED = true;
+  if (MAIN_BGM || MAIN_BGM_DISABLED) return;
   try {
     MAIN_BGM = new Audio(MAIN_BGM_SRC);
     MAIN_BGM.loop = true;
@@ -872,7 +873,6 @@ function ensureMainBgm() {
     MAIN_BGM.volume = 0.8;
     MAIN_BGM.addEventListener('error', () => {
       MAIN_BGM_DISABLED = true;
-      try { MAIN_BGM.pause(); } catch {}
       MAIN_BGM = null;
     }, { once: true });
   } catch {
@@ -880,32 +880,30 @@ function ensureMainBgm() {
   }
 }
 
-function pauseMainBgmHard() {
+function pauseMainBgm() {
   if (!MAIN_BGM) return;
-  try { MAIN_BGM.pause(); MAIN_BGM.currentTime = 0; MAIN_BGM.muted = false; } catch {}
+  try { MAIN_BGM.pause(); } catch {}
 }
 
-/**
- * Attempt to play. First tries audible; if blocked by autoplay policy,
- * starts muted then immediately unmutes (satisfies most browsers).
- */
-function tryPlayMainBgm() {
+function playMainBgm() {
   if (MAIN_BGM_DISABLED || !MAIN_BGM) return;
   if (!mainBgmAllowed()) return;
-  if (!MAIN_BGM.paused) return; // already playing
+  if (!MAIN_BGM.paused) return;
 
+  // Strategy 1: plain play (works if audio context already resumed)
   MAIN_BGM.muted = false;
-  const p1 = MAIN_BGM.play();
-  if (p1 && typeof p1.catch === 'function') {
-    p1.catch(() => {
+  const p = MAIN_BGM.play();
+  if (p && typeof p.catch === 'function') {
+    p.catch(() => {
+      // Strategy 2: muted autoplay then unmute
       if (!mainBgmAllowed()) return;
-      // Muted autoplay is allowed by most browsers even without gesture.
       MAIN_BGM.muted = true;
       const p2 = MAIN_BGM.play();
       if (p2 && typeof p2.then === 'function') {
         p2.then(() => {
-          // Unmute after a brief moment once audio context is running.
-          setTimeout(() => { if (MAIN_BGM && mainBgmAllowed()) MAIN_BGM.muted = false; }, 80);
+          setTimeout(() => {
+            if (MAIN_BGM && mainBgmAllowed()) MAIN_BGM.muted = false;
+          }, 50);
         }).catch(() => {});
       }
     });
@@ -917,20 +915,41 @@ function updateMainBgmForPage() {
   ensureMainBgm();
   if (!MAIN_BGM) return;
   if (mainBgmAllowed()) {
-    tryPlayMainBgm();
+    playMainBgm();
   } else {
-    pauseMainBgmHard();
+    pauseMainBgm();
   }
 }
 
-// Retry on first user interaction (covers strict autoplay policies).
-let BGM_GESTURE_ARMED = true;
-window.addEventListener('pointerdown', () => {
-  if (BGM_GESTURE_ARMED) {
-    BGM_GESTURE_ARMED = false;
+// ── AudioContext unlock on first user gesture ──
+// This is the most reliable cross-browser technique:
+// resume the suspended AudioContext, which unblocks Web Audio
+// and typically also unblocks HTMLAudioElement on the same page.
+function unlockAudio() {
+  if (AUDIO_UNLOCKED) return;
+  AUDIO_UNLOCKED = true;
+
+  ensureAudioCtx();
+  if (AUDIO_CTX && AUDIO_CTX.state === 'suspended') {
+    AUDIO_CTX.resume().then(() => {
+      updateMainBgmForPage();
+    }).catch(() => {
+      updateMainBgmForPage();
+    });
+  } else {
     updateMainBgmForPage();
   }
-}, { passive: true });
+}
+
+// Listen on capture phase so it fires before any other handler
+window.addEventListener('pointerdown', unlockAudio, { passive: true, capture: true });
+window.addEventListener('touchstart', unlockAudio, { passive: true, capture: true });
+window.addEventListener('click', unlockAudio, { passive: true, capture: true });
+
+// Re-sync when tab becomes visible again
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) updateMainBgmForPage();
+});
 
 function show(id, cb) {
   ALL_PAGES.forEach(p=>document.getElementById(p).classList.remove('active'));
@@ -1063,7 +1082,6 @@ function startRec(e){
   document.getElementById('cam-hint').textContent='소원을 말하세요…';
   recSec=0; showTimer();
   recTick=setInterval(()=>{ recSec++; showTimer(); if(recSec>=30)stopRec(); },1000);
-  // Ensure BGM is paused now that recording/timer is active
   updateMainBgmForPage();
 }
 
@@ -1097,7 +1115,6 @@ function showTimer(){
   el.classList.add('show');
   const m=Math.floor(recSec/60),s=recSec%60;
   el.textContent=`${m}:${s.toString().padStart(2,'0')}`;
-  // Immediately silence BGM when timer appears (belt-and-suspenders)
   updateMainBgmForPage();
 }
 
@@ -1138,10 +1155,9 @@ function showResult(granted){
    INIT
 ══════════════════════════════════════════════════════ */
 window.addEventListener('DOMContentLoaded', ()=>{
-  // Pre-create BGM element immediately so the browser can start buffering.
+  ensureAudioCtx();
   ensureMainBgm();
 
-  // Non-blocking: try to load external PNG asset if present.
   loadHandAsset().finally(()=>{
     renderRecLogo();
     buildAppIconFromHand();
@@ -1157,9 +1173,9 @@ window.addEventListener('DOMContentLoaded', ()=>{
       const c=document.getElementById('logo-canvas');
       c.width=256; c.height=256;
       startAnim([{el:c,size:256}],true);
-      // Attempt autoplay now — will succeed on some browsers, fail silently on others
-      // until the first user gesture fires the window pointerdown handler above.
-      tryPlayMainBgm();
+      // Attempt play immediately — will succeed on desktop browsers
+      // that allow autoplay; mobile will wait for first gesture
+      playMainBgm();
     });
   }
 });
