@@ -14,7 +14,7 @@
   --h: 100dvh;
   --pad: clamp(16px, 5vw, 32px);
   --logo: clamp(170px, 48vmin, 280px);
-  --cd-ring: clamp(190px, 56vmin, 300px);
+  --cd-ring: min(92vw, 78dvh, 640px);
   --accent: rgb(255, 40, 40);
   --red-dim: rgba(180, 0, 0, .13);
 }
@@ -52,7 +52,7 @@ html, body {
   opacity: 0; pointer-events: none;
   transition: opacity .6s ease;
 }
-#flash.in { opacity: 0.5; }
+#flash.in { opacity: 0.09; }
 
 /* ─── RED VEIL — shown on cooldown page ─── */
 #red-veil {
@@ -76,6 +76,17 @@ html, body {
   position: fixed; inset: 0; z-index: 2; pointer-events: none;
   opacity: .045;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.sound-embed {
+  position: fixed;
+  left: -120px;
+  top: 0;
+  width: 110px;
+  height: 200px;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ══════════════════════════════
@@ -353,7 +364,13 @@ html, body {
 /* ══════════════════════════════
    COOLDOWN
 ══════════════════════════════ */
-#p-cooldown { gap: clamp(20px,5vmin,32px); z-index: 3; }
+@property --cd-progress {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+#p-cooldown { gap: clamp(14px,3vmin,24px); z-index: 3; }
 
 .cd-title {
   font-size: clamp(13px, 3.4vw, 18px);
@@ -366,15 +383,41 @@ html, body {
 .cd-ring-wrap {
   position: relative;
   width: var(--cd-ring); height: var(--cd-ring);
+  --cd-progress: 0;
+  transition: --cd-progress .8s ease;
+}
+.cd-ring-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255,40,40,.2) 0%, rgba(255,40,40,.08) 54%, rgba(0,0,0,.2) 70%),
+    conic-gradient(from -90deg,
+      rgba(255,40,40,.58) calc(var(--cd-progress) * 1turn),
+      rgba(255,40,40,.06) 0);
+  box-shadow:
+    inset 0 0 34px rgba(255,40,40,.2),
+    0 0 34px rgba(255,40,40,.14);
+  transition: box-shadow .8s ease;
+}
+.cd-ring-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,0,0,.82) 0%, rgba(0,0,0,.5) 62%, rgba(0,0,0,0) 100%);
+  pointer-events: none;
 }
 .cd-ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .cd-ring-bg { fill: none; stroke: rgba(180,30,30,.22); }
 .cd-ring-fill {
   fill: none;
-  stroke: var(--accent);
+  stroke: rgba(255,80,80,.72);
   stroke-linecap: round;
+  stroke-width: 1.5;
   transition: stroke-dashoffset .8s ease;
-  filter: drop-shadow(0 0 14px rgba(255, 40, 40, .55));
+  filter: drop-shadow(0 0 10px rgba(255, 40, 40, .45));
 }
 
 .cd-spin-ring {
@@ -391,12 +434,12 @@ html, body {
 @keyframes cd-orbit { to { transform: rotate(360deg); } }
 
 .cd-center {
-  position: absolute; inset: 0;
+  position: absolute; inset: 0; z-index: 2;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
 }
 .cd-time {
   font-family: 'Space Mono', monospace;
-  font-size: clamp(32px, 10vmin, 58px);
+  font-size: clamp(38px, calc(var(--cd-ring) * .18), 96px);
   color: rgb(255, 60, 60);
   letter-spacing: .04em;
   font-variant-numeric: tabular-nums;
@@ -444,6 +487,28 @@ html, body {
 <div id="flash"></div>
 <div id="red-veil"></div>
 <div id="noise"></div>
+<iframe
+  id="ghost-embed"
+  class="sound-embed"
+  width="110"
+  height="200"
+  src="https://www.myinstants.com/instant/ghost-voice-485/embed/"
+  frameborder="0"
+  scrolling="no"
+  allow="autoplay"
+  title="Ghost voice sound"
+  aria-hidden="true"></iframe>
+<iframe
+  id="transmit-embed"
+  class="sound-embed"
+  width="110"
+  height="200"
+  src="https://www.myinstants.com/instant/suspense-build-up-90807/embed/"
+  frameborder="0"
+  scrolling="no"
+  allow="autoplay"
+  title="Suspense build up sound"
+  aria-hidden="true"></iframe>
 
 <!-- ══ SPLASH ══ -->
 <div class="page" id="p-splash">
@@ -778,7 +843,10 @@ function updateRedVeil(pageId){
   AUDIO — BGM with AudioContext unlock strategy
 ══════════════════════════════════════════════════════ */
 const MAIN_BGM_SRC='./girigo.mp3';
+const GHOST_SOUND_SRC='https://www.myinstants.com/media/sounds/04-sound-effects_-eerie-ghost-voice.mp3';
+const TRANSMIT_SOUND_SRC='https://www.myinstants.com/media/sounds/suspense-build-up.mp3';
 let MAIN_BGM=null,MAIN_BGM_DISABLED=false,AUDIO_CTX=null,AUDIO_UNLOCKED=false,ACTIVE_PAGE='p-splash';
+let GHOST_AUDIO=null,GHOST_DISABLED=false,TRANSMIT_AUDIO=null,TRANSMIT_DISABLED=false;
 
 function isRecordingActive(){return!!(recorder&&recorder.state==='recording');}
 function isRecordingTimerVisible(){const t=document.getElementById('cam-timer');return!!(t&&t.classList.contains('show'));}
@@ -827,8 +895,46 @@ function updateMainBgmForPage(){
   if(mainBgmAllowed())playMainBgm();else pauseMainBgm();
 }
 
+function ensureGhostAudio(){
+  if(GHOST_AUDIO||GHOST_DISABLED)return;
+  try{
+    GHOST_AUDIO=new Audio(GHOST_SOUND_SRC);
+    GHOST_AUDIO.preload='auto';GHOST_AUDIO.volume=1;
+    GHOST_AUDIO.addEventListener('error',()=>{GHOST_DISABLED=true;GHOST_AUDIO=null;},{once:true});
+  }catch{GHOST_DISABLED=true;}
+}
+
+function playGhostSound(){
+  if(GHOST_DISABLED)return;ensureGhostAudio();if(!GHOST_AUDIO)return;
+  try{GHOST_AUDIO.pause();GHOST_AUDIO.currentTime=0;}catch{}
+  const p=GHOST_AUDIO.play();
+  if(p&&typeof p.catch==='function')p.catch(()=>{});
+}
+
+function stopGhostSound(){
+  if(!GHOST_AUDIO)return;
+  try{GHOST_AUDIO.pause();GHOST_AUDIO.currentTime=0;}catch{}
+}
+
+function ensureTransmitAudio(){
+  if(TRANSMIT_AUDIO||TRANSMIT_DISABLED)return;
+  try{
+    TRANSMIT_AUDIO=new Audio(TRANSMIT_SOUND_SRC);
+    TRANSMIT_AUDIO.preload='auto';TRANSMIT_AUDIO.volume=1;
+    TRANSMIT_AUDIO.addEventListener('error',()=>{TRANSMIT_DISABLED=true;TRANSMIT_AUDIO=null;},{once:true});
+  }catch{TRANSMIT_DISABLED=true;}
+}
+
+function playTransmitSound(){
+  if(TRANSMIT_DISABLED)return;ensureTransmitAudio();if(!TRANSMIT_AUDIO)return;
+  try{TRANSMIT_AUDIO.pause();TRANSMIT_AUDIO.currentTime=0;}catch{}
+  const p=TRANSMIT_AUDIO.play();
+  if(p&&typeof p.catch==='function')p.catch(()=>{});
+}
+
 function unlockAudio(){
   if(AUDIO_UNLOCKED)return;AUDIO_UNLOCKED=true;ensureAudioCtx();
+  ensureGhostAudio();ensureTransmitAudio();
   if(AUDIO_CTX&&AUDIO_CTX.state==='suspended'){
     AUDIO_CTX.resume().then(()=>updateMainBgmForPage()).catch(()=>updateMainBgmForPage());
   }else{updateMainBgmForPage();}
@@ -868,8 +974,10 @@ function updateCooldownUI(){
   const expiredEl=document.getElementById('cd-expired');
   const timeEl=document.getElementById('cd-time');
   const arc=document.getElementById('cd-arc');
+  const ring=document.querySelector('.cd-ring-wrap');
   if(rem<=0){
     clearInterval(cdTicker);timeEl.textContent='00:00:00';
+    ring.style.setProperty('--cd-progress','1');
     arc.style.strokeDashoffset='0';expiredEl.classList.add('show');
     updateRedVeil('p-cooldown'); // update veil when expired
     return;
@@ -878,6 +986,7 @@ function updateCooldownUI(){
   const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);
   timeEl.textContent=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
   const pct=1-(rem/COOLDOWN_MS);
+  ring.style.setProperty('--cd-progress',pct.toString());
   arc.style.strokeDashoffset=(553*(1-pct)).toString();
   updateRedVeil('p-cooldown'); // update veil opacity
 }
@@ -924,7 +1033,7 @@ function checkGranted(){
 let stream=null,recorder=null,chunks=[],blob=null,blobURL=null;
 let recSec=0,recTick=null;
 
-function killStream(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
+function killStream(){stopGhostSound();if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
 
 function startRec(){
   if(!stream)return;chunks=[];
@@ -932,6 +1041,7 @@ function startRec(){
   recorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});
   recorder.ondataavailable=ev=>{if(ev.data&&ev.data.size>0)chunks.push(ev.data);};
   recorder.start(100);
+  playGhostSound();
   document.getElementById('rec-btn').classList.add('recording');
   document.getElementById('cam-rec').classList.add('on');
   document.getElementById('cam-hint').textContent='소원을 말하세요…';
@@ -942,6 +1052,7 @@ function startRec(){
 
 function stopRec(){
   if(!recorder||recorder.state==='inactive')return;
+  stopGhostSound();
   recorder.stop();clearInterval(recTick);
   document.getElementById('rec-btn').classList.remove('recording');
   document.getElementById('cam-rec').classList.remove('on');
@@ -976,6 +1087,7 @@ function retake(){show('p-cam');}
 ══════════════════════════════════════════════════════ */
 function transmit(){
   killStream();setCooldownNow();
+  playTransmitSound();
   HAS_SUBMITTED = true;
   show('p-transmit',()=>{
     const tc=document.getElementById('tx-canvas');tc.width=256;tc.height=256;
