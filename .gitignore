@@ -1,0 +1,6 @@
+node_modules/
+.env
+data/wishes.json
+data/videos/
+npm-debug.log*
+.DS_Store

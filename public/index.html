@@ -54,19 +54,18 @@ html, body {
 }
 #flash.in { opacity: 0.09; }
 
-/* ─── RED VEIL — shown on cooldown page ─── */
+/* ─── RED VEIL — shown ONLY after wish is granted ─── */
 #red-veil {
   position: fixed; inset: 0; z-index: 1;
   pointer-events: none;
   background: radial-gradient(ellipse at center, rgba(160,0,0,.22) 0%, rgba(80,0,0,.55) 100%);
   opacity: 0;
-  transition: opacity 1.8s ease;
+  transition: opacity 2.4s ease;
 }
 #red-veil.on { opacity: 1; }
 
-/* slow blood-red pulse on top of veil */
 @keyframes veil-breathe {
-  0%,100% { opacity: .85; }
+  0%,100% { opacity: .82; }
   50%      { opacity: 1;   }
 }
 #red-veil.on { animation: veil-breathe 4s ease-in-out infinite; }
@@ -79,14 +78,9 @@ html, body {
 }
 
 .sound-embed {
-  position: fixed;
-  left: -120px;
-  top: 0;
-  width: 110px;
-  height: 200px;
-  border: 0;
-  opacity: 0;
-  pointer-events: none;
+  position: fixed; left: -120px; top: 0;
+  width: 110px; height: 200px;
+  border: 0; opacity: 0; pointer-events: none;
 }
 
 /* ══════════════════════════════
@@ -103,6 +97,7 @@ html, body {
   margin-bottom: clamp(20px, 5vmin, 36px);
   animation: title-breathe 6s ease-in-out infinite;
   text-shadow: 0 0 60px rgba(255,40,40,.18);
+  cursor: pointer;
 }
 @keyframes title-breathe {
   0%,100% { opacity: .92; text-shadow: 0 0 60px rgba(255,40,40,.12); }
@@ -230,13 +225,13 @@ html, body {
   touch-action: none;
 }
 .rec-btn:active { border-color: rgba(255,255,255,.65); }
+.rec-btn.recording { border-color: rgba(255,60,60,.8); }
+.rec-btn.recording #rec-logo { opacity: 1; }
 #rec-logo {
   width: 78%; height: 78%; display: block;
   image-rendering: pixelated; image-rendering: crisp-edges;
   opacity: .92;
 }
-.rec-btn.recording { border-color: rgba(255,60,60,.8); }
-.rec-btn.recording #rec-logo { opacity: 1; }
 
 .cam-err {
   position: absolute; inset: 0;
@@ -253,19 +248,54 @@ html, body {
 }
 
 /* ══════════════════════════════
-   REVIEW
+   REVIEW — maximized video
 ══════════════════════════════ */
-#p-review { gap: clamp(16px,4vmin,24px); }
+#p-review { padding: 0; background: #000; }
+
+/* Full-bleed video preview */
 #prev-vid {
-  width: min(180px, 52vw); aspect-ratio: 9/16;
-  object-fit: cover;
-  border: 1px solid rgba(255,255,255,.12);
-  filter: grayscale(65%); transform: scaleX(-1);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* contain = show full frame no crop */
+  background: #000;
+  transform: scaleX(-1); /* mirror like camera */
+  filter: grayscale(55%);
+}
+
+/* dark vignette so UI is readable */
+.rev-overlay {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(to bottom,
+      rgba(0,0,0,.82) 0%,
+      transparent 20%,
+      transparent 72%,
+      rgba(0,0,0,.95) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.rev-top {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding: calc(env(safe-area-inset-top) + clamp(14px,4vmin,22px)) var(--pad) 0;
+  z-index: 3;
+  display: flex; align-items: center; justify-content: center;
 }
 .rev-label {
-  font-size: clamp(15px, 3.8vw, 20px);
-  letter-spacing: .42em;
-  color: rgba(255,255,255,.78);
+  font-size: clamp(14px, 3.8vw, 20px);
+  letter-spacing: .48em;
+  color: rgba(255,255,255,.82);
+  text-align: center;
+  text-shadow: 0 1px 8px rgba(0,0,0,.8);
+}
+
+.rev-bot {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 0 var(--pad) calc(env(safe-area-inset-bottom) + clamp(28px,8vmin,48px));
+  display: flex; flex-direction: column; align-items: center; gap: clamp(10px,2.5vmin,16px);
+  z-index: 3;
 }
 .rev-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .rev-btn {
@@ -280,6 +310,15 @@ html, body {
 .rev-btn:hover, .rev-btn:active { color: rgba(255,255,255,.92); border-color: rgba(255,255,255,.5); }
 .rev-btn.primary { border-color: rgba(255,60,60,.55); color: rgba(255,160,160,.9); }
 .rev-btn.primary:hover, .rev-btn.primary:active { border-color: rgba(255,60,60,.85); color: #fff; }
+
+/* uploading state on review page */
+.rev-uploading {
+  display: none;
+  font-size: clamp(12px, 2.8vw, 15px);
+  letter-spacing: .3em; color: rgba(255,200,200,.7);
+  text-align: center;
+}
+.rev-uploading.show { display: block; }
 
 /* ══════════════════════════════
    TRANSMIT
@@ -338,6 +377,28 @@ html, body {
   width: clamp(80px,22vmin,110px); height: clamp(80px,22vmin,110px);
   display: block;
 }
+
+/* oracle badge — shown on result page */
+.oracle-badge {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 24px;
+  border: 1px solid rgba(255,80,80,.25);
+  text-align: center;
+}
+.oracle-badge .ob-symbol {
+  font-size: clamp(20px,5vw,28px); color: rgba(255,100,100,.9);
+  text-shadow: 0 0 20px rgba(255,40,40,.5);
+  letter-spacing: .1em;
+}
+.oracle-badge .ob-phase {
+  font-size: clamp(11px,2.6vw,14px); letter-spacing: .42em;
+  color: rgba(255,180,180,.65);
+}
+.oracle-badge .ob-text {
+  font-size: clamp(12px,2.8vw,15px); letter-spacing: .18em;
+  color: rgba(255,220,220,.75); line-height: 2; max-width: min(280px,80vw);
+}
+
 .res-actions { width: min(300px,88vw); display: flex; flex-direction: column; gap: 12px; margin-top: clamp(12px,3vmin,20px); }
 .res-btn {
   background: transparent; border: 1px solid rgba(255,255,255,.22);
@@ -349,6 +410,8 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 .res-btn:hover, .res-btn:active { color: rgba(255,255,255,.95); border-color: rgba(255,255,255,.5); }
+
+/* granted badge */
 .granted-badge {
   display: inline-flex; align-items: center; gap: 10px;
   font-size: clamp(14px, 3.5vw, 18px); letter-spacing: .38em;
@@ -361,103 +424,104 @@ html, body {
 }
 @keyframes gstar { 0%,100%{opacity:.25;transform:scale(.6)} 50%{opacity:1;transform:scale(1.4)} }
 
-/* ══════════════════════════════
-   COOLDOWN
-══════════════════════════════ */
-@property --cd-progress {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
+/* ══════════════════════════════════════════
+   WAITING / ORACLE PAGE (replaces cooldown)
+   Shows ONLY after submission, before grant
+══════════════════════════════════════════ */
+#p-oracle {
+  gap: clamp(10px,2.5vmin,18px);
+  z-index: 3;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(32px,10vmin,60px) var(--pad);
 }
 
-#p-cooldown { gap: clamp(14px,3vmin,24px); z-index: 3; }
-
-.cd-title {
-  font-size: clamp(13px, 3.4vw, 18px);
-  letter-spacing: .42em;
-  color: rgba(255,200,200,.85);
-  text-align: center;
-  text-shadow: 0 0 30px rgba(255,40,40,.4);
-}
-
-.cd-ring-wrap {
+/* oracle symbol ring — decorative, not a countdown */
+.oracle-ring-wrap {
   position: relative;
-  width: var(--cd-ring); height: var(--cd-ring);
-  --cd-progress: 0;
-  transition: --cd-progress .8s ease;
-}
-.cd-ring-wrap::before {
-  content: "";
-  position: absolute;
-  inset: 6%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, rgba(255,40,40,.2) 0%, rgba(255,40,40,.08) 54%, rgba(0,0,0,.2) 70%),
-    conic-gradient(from -90deg,
-      rgba(255,40,40,.58) calc(var(--cd-progress) * 1turn),
-      rgba(255,40,40,.06) 0);
-  box-shadow:
-    inset 0 0 34px rgba(255,40,40,.2),
-    0 0 34px rgba(255,40,40,.14);
-  transition: box-shadow .8s ease;
-}
-.cd-ring-wrap::after {
-  content: "";
-  position: absolute;
-  inset: 22%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0,0,0,.82) 0%, rgba(0,0,0,.5) 62%, rgba(0,0,0,0) 100%);
-  pointer-events: none;
-}
-.cd-ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.cd-ring-bg { fill: none; stroke: rgba(180,30,30,.22); }
-.cd-ring-fill {
-  fill: none;
-  stroke: rgba(255,80,80,.72);
-  stroke-linecap: round;
-  stroke-width: 1.5;
-  transition: stroke-dashoffset .8s ease;
-  filter: drop-shadow(0 0 10px rgba(255, 40, 40, .45));
+  width: min(72vw, 68dvh, 360px);
+  height: min(72vw, 68dvh, 360px);
+  flex-shrink: 0;
 }
 
-.cd-spin-ring {
+.oracle-ring-bg {
   position: absolute; inset: 0; border-radius: 50%;
-  border: 1px solid rgba(255,40,40,.18);
-  animation: cd-orbit 10s linear infinite;
+  border: 1px solid rgba(255,40,40,.12);
 }
-.cd-spin-dot {
+
+/* rotating rune ring */
+.oracle-spin-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px dashed rgba(255,40,40,.20);
+  animation: oracle-orbit 18s linear infinite;
+}
+.oracle-spin-ring-2 {
+  position: absolute; inset: 8%; border-radius: 50%;
+  border: 1px dashed rgba(255,40,40,.10);
+  animation: oracle-orbit 32s linear infinite reverse;
+}
+@keyframes oracle-orbit { to { transform: rotate(360deg); } }
+
+/* rune dots on the outer ring */
+.oracle-rune-dot {
   position: absolute; top: clamp(4px,1.2vmin,7px); left: 50%;
   transform: translateX(-50%);
-  width: 5px; height: 5px; border-radius: 50%; background: rgba(255,80,80,.75);
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(255,80,80,.7);
   box-shadow: 0 0 8px rgba(255,40,40,.8);
 }
-@keyframes cd-orbit { to { transform: rotate(360deg); } }
 
-.cd-center {
+/* inner glow fill */
+.oracle-ring-wrap::before {
+  content: "";
+  position: absolute; inset: 6%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,40,40,.12) 0%, rgba(255,40,40,.04) 54%, rgba(0,0,0,.2) 70%);
+  box-shadow: inset 0 0 34px rgba(255,40,40,.1), 0 0 34px rgba(255,40,40,.06);
+}
+
+/* hole in center */
+.oracle-ring-wrap::after {
+  content: "";
+  position: absolute; inset: 22%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,0,0,.85) 0%, rgba(0,0,0,.5) 62%, transparent 100%);
+  pointer-events: none;
+}
+
+.oracle-center {
   position: absolute; inset: 0; z-index: 2;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
 }
-.cd-time {
-  font-family: 'Space Mono', monospace;
-  font-size: clamp(38px, calc(var(--cd-ring) * .18), 96px);
+
+.oracle-symbol-display {
+  font-size: clamp(32px, calc(min(72vw,68dvh,360px) * .18), 72px);
   color: rgb(255, 60, 60);
-  letter-spacing: .04em;
-  font-variant-numeric: tabular-nums;
   text-shadow: 0 0 28px rgba(255,40,40,.65);
+  animation: symbol-pulse 3s ease-in-out infinite;
+  letter-spacing: .06em;
 }
-.cd-sub {
-  font-size: clamp(11px, 2.8vw, 15px);
-  letter-spacing: .45em;
-  color: rgba(255,180,180,.7);
-}
-
-.cd-note {
-  font-size: clamp(12px, 3vw, 16px); letter-spacing: .28em;
-  color: rgba(255,200,200,.65); text-align: center;
-  max-width: min(260px,84vw); line-height: 2.2;
+@keyframes symbol-pulse {
+  0%,100% { opacity: .7; transform: scale(.96); }
+  50%      { opacity: 1;  transform: scale(1.04); }
 }
 
-.cd-check-btn {
+.oracle-phase-label {
+  font-size: clamp(10px, 2.4vw, 14px);
+  letter-spacing: .46em;
+  color: rgba(255,180,180,.65);
+  text-align: center;
+}
+
+/* oracle text below ring */
+.oracle-msg {
+  font-size: clamp(12px, 3vw, 16px); letter-spacing: .26em;
+  color: rgba(255,200,200,.68); text-align: center;
+  max-width: min(280px,84vw); line-height: 2.3;
+  min-height: 2em;
+}
+
+/* check-in button */
+.oracle-check-btn {
   background: transparent; border: 1px solid rgba(255,60,60,.35);
   color: rgba(255,180,180,.8);
   font-family: 'Noto Serif KR', serif;
@@ -465,50 +529,150 @@ html, body {
   padding: clamp(12px,3vmin,16px) clamp(20px,5.5vw,32px);
   cursor: pointer; transition: all .3s;
   -webkit-tap-highlight-color: transparent;
+  margin-top: 4px;
 }
-.cd-check-btn:hover, .cd-check-btn:active {
+.oracle-check-btn:hover, .oracle-check-btn:active {
   color: rgba(255,220,220,1);
   border-color: rgba(255,80,80,.7);
   text-shadow: 0 0 20px rgba(255,40,40,.5);
 }
 
-.cd-expired-msg {
+/* grant revealed state */
+.oracle-granted-msg {
+  display: none;
   font-size: clamp(14px, 3.5vw, 18px); letter-spacing: .38em;
   color: rgba(255,160,160,.9); text-align: center;
   animation: pulse-txt 3s ease-in-out infinite;
   cursor: pointer;
-  display: none;
   text-shadow: 0 0 20px rgba(255,40,40,.6);
 }
-.cd-expired-msg.show { display: block; }
+.oracle-granted-msg.show { display: block; }
+
+/* ══════════════════════════════════════════
+   GRANTED PAGE — shown after wish granted
+   Red veil + countdown until "manifestation"
+══════════════════════════════════════════ */
+#p-granted { gap: clamp(12px,3vmin,20px); z-index: 3; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(32px,10vmin,56px) var(--pad);
+}
+
+.grt-title {
+  font-size: clamp(13px, 3.4vw, 18px);
+  letter-spacing: .42em;
+  color: rgba(255,200,200,.9);
+  text-align: center;
+  text-shadow: 0 0 30px rgba(255,40,40,.5);
+}
+
+/* countdown ring — 7-day manifestation timer */
+@property --grt-progress {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+.grt-ring-wrap {
+  position: relative;
+  width: min(72vw, 68dvh, 360px);
+  height: min(72vw, 68dvh, 360px);
+  --grt-progress: 0;
+  transition: --grt-progress .8s ease;
+  flex-shrink: 0;
+}
+
+.grt-ring-wrap::before {
+  content: "";
+  position: absolute; inset: 6%; border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255,40,40,.25) 0%, rgba(255,40,40,.10) 54%, rgba(0,0,0,.2) 70%),
+    conic-gradient(from -90deg,
+      rgba(255,40,40,.62) calc(var(--grt-progress) * 1turn),
+      rgba(255,40,40,.06) 0);
+  box-shadow:
+    inset 0 0 40px rgba(255,40,40,.25),
+    0 0 40px rgba(255,40,40,.18);
+}
+.grt-ring-wrap::after {
+  content: "";
+  position: absolute; inset: 22%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,0,0,.85) 0%, rgba(0,0,0,.5) 62%, transparent 100%);
+  pointer-events: none;
+}
+
+.grt-ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.grt-ring-bg { fill: none; stroke: rgba(180,30,30,.22); }
+.grt-ring-fill {
+  fill: none;
+  stroke: rgba(255,80,80,.75);
+  stroke-linecap: round;
+  stroke-width: 1.5;
+  transition: stroke-dashoffset .8s ease;
+  filter: drop-shadow(0 0 10px rgba(255, 40, 40, .5));
+}
+
+.grt-spin-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(255,40,40,.20);
+  animation: cd-orbit 8s linear infinite;
+}
+.grt-spin-dot {
+  position: absolute; top: clamp(4px,1.2vmin,7px); left: 50%;
+  transform: translateX(-50%);
+  width: 5px; height: 5px; border-radius: 50%; background: rgba(255,80,80,.8);
+  box-shadow: 0 0 8px rgba(255,40,40,.9);
+}
+@keyframes cd-orbit { to { transform: rotate(360deg); } }
+
+.grt-center {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.grt-time {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(30px, calc(min(72vw,68dvh,360px) * .15), 80px);
+  color: rgb(255, 60, 60);
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 28px rgba(255,40,40,.7);
+}
+.grt-sub {
+  font-size: clamp(10px, 2.6vw, 14px);
+  letter-spacing: .45em;
+  color: rgba(255,180,180,.65);
+}
+
+.grt-msg {
+  font-size: clamp(12px, 3vw, 16px); letter-spacing: .26em;
+  color: rgba(255,200,200,.65); text-align: center;
+  max-width: min(260px,84vw); line-height: 2.2;
+}
+
+.grt-manifest-msg {
+  display: none;
+  font-size: clamp(14px, 3.5vw, 18px); letter-spacing: .38em;
+  color: rgba(255,200,160,.95); text-align: center;
+  text-shadow: 0 0 24px rgba(255,80,40,.6);
+  animation: pulse-txt 3s ease-in-out infinite;
+  cursor: pointer;
+}
+.grt-manifest-msg.show { display: block; }
+
 </style>
 </head>
 <body>
 <div id="flash"></div>
 <div id="red-veil"></div>
 <div id="noise"></div>
-<iframe
-  id="ghost-embed"
-  class="sound-embed"
-  width="110"
-  height="200"
+
+<iframe id="ghost-embed" class="sound-embed"
   src="https://www.myinstants.com/instant/ghost-voice-485/embed/"
-  frameborder="0"
-  scrolling="no"
-  allow="autoplay"
-  title="Ghost voice sound"
-  aria-hidden="true"></iframe>
-<iframe
-  id="transmit-embed"
-  class="sound-embed"
-  width="110"
-  height="200"
+  frameborder="0" scrolling="no" allow="autoplay"
+  title="Ghost voice sound" aria-hidden="true"></iframe>
+<iframe id="transmit-embed" class="sound-embed"
   src="https://www.myinstants.com/instant/suspense-build-up-90807/embed/"
-  frameborder="0"
-  scrolling="no"
-  allow="autoplay"
-  title="Suspense build up sound"
-  aria-hidden="true"></iframe>
+  frameborder="0" scrolling="no" allow="autoplay"
+  title="Suspense build up sound" aria-hidden="true"></iframe>
 
 <!-- ══ SPLASH ══ -->
 <div class="page" id="p-splash">
@@ -541,13 +705,19 @@ html, body {
   </div>
 </div>
 
-<!-- ══ REVIEW ══ -->
+<!-- ══ REVIEW — full-screen video ══ -->
 <div class="page" id="p-review">
-  <video id="prev-vid" playsinline controls></video>
-  <div class="rev-label">소원이 담겼습니다</div>
-  <div class="rev-actions">
-    <button class="rev-btn" onclick="retake()">다시 찍기</button>
-    <button class="rev-btn primary" onclick="transmit()">소원 올리기</button>
+  <video id="prev-vid" playsinline autoplay loop></video>
+  <div class="rev-overlay"></div>
+  <div class="rev-top">
+    <div class="rev-label">소원이 담겼습니다</div>
+  </div>
+  <div class="rev-bot">
+    <div class="rev-uploading" id="rev-uploading">신탁에 전달하는 중…</div>
+    <div class="rev-actions">
+      <button class="rev-btn" onclick="retake()">다시 찍기</button>
+      <button class="rev-btn primary" id="transmit-btn" onclick="transmit()">소원 올리기</button>
+    </div>
   </div>
 </div>
 
@@ -566,32 +736,61 @@ html, body {
   <div class="res-top">
     <div class="res-status" id="res-status-text">소원이 전달되었습니다</div>
     <canvas id="res-canvas" width="256" height="256"></canvas>
+    <div class="oracle-badge" id="oracle-badge">
+      <div class="ob-symbol" id="ob-symbol">⊙</div>
+      <div class="ob-phase" id="ob-phase">봉헌 수신됨</div>
+      <div class="ob-text" id="ob-text">봉헌이 신탁에 전달되었습니다.</div>
+    </div>
     <div id="granted-badge-wrap"></div>
   </div>
   <div class="res-actions">
     <a id="dl-link" class="res-btn" download="girigo.webm">영상 저장하기</a>
+    <button class="res-btn" onclick="goOraclePage()">신탁 상태 보기</button>
     <button class="res-btn" onclick="goSplash()">처음으로</button>
   </div>
 </div>
 
-<!-- ══ COOLDOWN ══ -->
-<div class="page" id="p-cooldown">
-  <div class="cd-ring-wrap">
-    <svg class="cd-ring-svg" viewBox="0 0 200 200">
-      <circle class="cd-ring-bg" cx="100" cy="100" r="88" stroke-width="2.5"/>
-      <circle class="cd-ring-fill" id="cd-arc"
+<!-- ══ ORACLE WAITING PAGE ══ -->
+<div class="page" id="p-oracle">
+  <div class="oracle-ring-wrap">
+    <div class="oracle-ring-bg"></div>
+    <div class="oracle-spin-ring"><div class="oracle-rune-dot"></div></div>
+    <div class="oracle-spin-ring-2"></div>
+    <svg style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;" viewBox="0 0 200 200">
+      <circle fill="none" stroke="rgba(180,30,30,.16)" cx="100" cy="100" r="88" stroke-width="2"/>
+    </svg>
+    <div class="oracle-center">
+      <div class="oracle-symbol-display" id="oracle-symbol-display">⊙</div>
+      <div class="oracle-phase-label" id="oracle-phase-label">봉헌 수신됨</div>
+    </div>
+  </div>
+  <div class="oracle-msg" id="oracle-msg">신탁이 침묵 속에 있습니다.</div>
+  <button class="oracle-check-btn" onclick="checkOracleStatus()">신탁 확인하기</button>
+  <div class="oracle-granted-msg" id="oracle-granted-msg" onclick="goGrantedPage()">소원이 이루어졌습니다 →</div>
+</div>
+
+<!-- ══ GRANTED PAGE — red veil + manifestation timer ══ -->
+<div class="page" id="p-granted">
+  <div class="grt-title">소원이 허락되었습니다</div>
+  <div class="grt-ring-wrap" id="grt-ring-wrap">
+    <svg class="grt-ring-svg" viewBox="0 0 200 200">
+      <circle class="grt-ring-bg" cx="100" cy="100" r="88" stroke-width="2.5"/>
+      <circle class="grt-ring-fill" id="grt-arc"
         cx="100" cy="100" r="88"
         stroke-width="2.5"
         stroke-dasharray="553"
         stroke-dashoffset="553"
         transform="rotate(-90 100 100)"/>
     </svg>
-    <div class="cd-spin-ring"><div class="cd-spin-dot"></div></div>
-    <div class="cd-center">
-      <div class="cd-time" id="cd-time">00:00:00</div>
+    <div class="grt-spin-ring"><div class="grt-spin-dot"></div></div>
+    <div class="grt-center">
+      <div class="grt-time" id="grt-time">00:00:00</div>
+      <div class="grt-sub">현현까지</div>
     </div>
   </div>
-  <div class="cd-expired-msg" id="cd-expired" onclick="tryGoCamera()">소원을 다시 빌 수 있습니다 →</div>
+  <div class="grt-msg" id="grt-msg">우주가 소원을 향해 정렬되고 있습니다.<br>기다림 속에 믿음을 지키십시오.</div>
+  <div class="grt-manifest-msg" id="grt-manifest-msg">현현이 이루어졌습니다 ✦</div>
+  <button class="oracle-check-btn" onclick="goSplash()" style="margin-top:8px;font-size:clamp(12px,2.8vw,15px);">처음으로</button>
 </div>
 
 <script>
@@ -815,37 +1014,38 @@ function renderStatic(canvas,size){
 /* ══════════════════════════════════════════════════════
    PAGE SYSTEM
 ══════════════════════════════════════════════════════ */
-const ALL_PAGES=['p-splash','p-cam','p-review','p-transmit','p-result','p-cooldown'];
+const ALL_PAGES=['p-splash','p-cam','p-review','p-transmit','p-result','p-oracle','p-granted'];
+let ACTIVE_PAGE='p-splash';
 
 /* ══════════════════════════════════════════════════════
-   RED VEIL — cooldown page + splash after submission
+   RED VEIL — only for GRANTED state
 ══════════════════════════════════════════════════════ */
-let HAS_SUBMITTED = !!localStorage.getItem('girigo_ts');
-
-function setRedVeil(on, opacity = 1){
-  const veil = document.getElementById('red-veil');
-  veil.classList.toggle('on', on);
-  veil.style.opacity = on ? opacity : 0;
+function setRedVeil(on){
+  const veil=document.getElementById('red-veil');
+  veil.classList.toggle('on',on);
+  if(!on) veil.style.opacity=0;
+  else veil.style.opacity='';
 }
 
 function updateRedVeil(pageId){
-  const on = pageId === 'p-cooldown' || (pageId === 'p-splash' && HAS_SUBMITTED);
-  if (on && pageId === 'p-cooldown') {
-    const rem = getCooldownRemaining();
-    const opacity = rem > 0 ? rem / COOLDOWN_MS : 0;
-    setRedVeil(true, opacity);
-  } else {
-    setRedVeil(on);
-  }
+  // Red veil ONLY if wish has been granted
+  const granted=localStorage.getItem('girigo_granted')==='1';
+  setRedVeil(granted && (pageId==='p-granted' || pageId==='p-splash'));
+}
+
+function pauseReviewVideo(){
+  const prevVid=document.getElementById('prev-vid');
+  if(!prevVid)return;
+  try{prevVid.pause();prevVid.currentTime=0;}catch{}
 }
 
 /* ══════════════════════════════════════════════════════
-  AUDIO — BGM with AudioContext unlock strategy
+   AUDIO
 ══════════════════════════════════════════════════════ */
 const MAIN_BGM_SRC='./girigo.mp3';
 const GHOST_SOUND_SRC='https://www.myinstants.com/media/sounds/04-sound-effects_-eerie-ghost-voice.mp3';
 const TRANSMIT_SOUND_SRC='https://www.myinstants.com/media/sounds/suspense-build-up.mp3';
-let MAIN_BGM=null,MAIN_BGM_DISABLED=false,AUDIO_CTX=null,AUDIO_UNLOCKED=false,ACTIVE_PAGE='p-splash';
+let MAIN_BGM=null,MAIN_BGM_DISABLED=false,AUDIO_CTX=null,AUDIO_UNLOCKED=false;
 let GHOST_AUDIO=null,GHOST_DISABLED=false,TRANSMIT_AUDIO=null,TRANSMIT_DISABLED=false;
 
 function isRecordingActive(){return!!(recorder&&recorder.state==='recording');}
@@ -853,7 +1053,6 @@ function isRecordingTimerVisible(){const t=document.getElementById('cam-timer');
 function mainBgmAllowed(){
   if(ACTIVE_PAGE!=='p-splash')return false;
   if(isRecordingActive())return false;
-  if(isRecordingTimerVisible())return false;
   return true;
 }
 
@@ -861,7 +1060,6 @@ function ensureAudioCtx(){
   if(AUDIO_CTX)return;
   try{AUDIO_CTX=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
 }
-
 function ensureMainBgm(){
   if(MAIN_BGM||MAIN_BGM_DISABLED)return;
   try{
@@ -870,9 +1068,7 @@ function ensureMainBgm(){
     MAIN_BGM.addEventListener('error',()=>{MAIN_BGM_DISABLED=true;MAIN_BGM=null;},{once:true});
   }catch{MAIN_BGM_DISABLED=true;}
 }
-
 function pauseMainBgm(){if(!MAIN_BGM)return;try{MAIN_BGM.pause();}catch{}}
-
 function playMainBgm(){
   if(MAIN_BGM_DISABLED||!MAIN_BGM)return;
   if(!mainBgmAllowed())return;if(!MAIN_BGM.paused)return;
@@ -889,12 +1085,10 @@ function playMainBgm(){
     });
   }
 }
-
 function updateMainBgmForPage(){
   if(MAIN_BGM_DISABLED)return;ensureMainBgm();if(!MAIN_BGM)return;
   if(mainBgmAllowed())playMainBgm();else pauseMainBgm();
 }
-
 function ensureGhostAudio(){
   if(GHOST_AUDIO||GHOST_DISABLED)return;
   try{
@@ -903,19 +1097,16 @@ function ensureGhostAudio(){
     GHOST_AUDIO.addEventListener('error',()=>{GHOST_DISABLED=true;GHOST_AUDIO=null;},{once:true});
   }catch{GHOST_DISABLED=true;}
 }
-
 function playGhostSound(){
   if(GHOST_DISABLED)return;ensureGhostAudio();if(!GHOST_AUDIO)return;
   try{GHOST_AUDIO.pause();GHOST_AUDIO.currentTime=0;}catch{}
   const p=GHOST_AUDIO.play();
   if(p&&typeof p.catch==='function')p.catch(()=>{});
 }
-
 function stopGhostSound(){
   if(!GHOST_AUDIO)return;
   try{GHOST_AUDIO.pause();GHOST_AUDIO.currentTime=0;}catch{}
 }
-
 function ensureTransmitAudio(){
   if(TRANSMIT_AUDIO||TRANSMIT_DISABLED)return;
   try{
@@ -924,14 +1115,12 @@ function ensureTransmitAudio(){
     TRANSMIT_AUDIO.addEventListener('error',()=>{TRANSMIT_DISABLED=true;TRANSMIT_AUDIO=null;},{once:true});
   }catch{TRANSMIT_DISABLED=true;}
 }
-
 function playTransmitSound(){
   if(TRANSMIT_DISABLED)return;ensureTransmitAudio();if(!TRANSMIT_AUDIO)return;
   try{TRANSMIT_AUDIO.pause();TRANSMIT_AUDIO.currentTime=0;}catch{}
   const p=TRANSMIT_AUDIO.play();
   if(p&&typeof p.catch==='function')p.catch(()=>{});
 }
-
 function unlockAudio(){
   if(AUDIO_UNLOCKED)return;AUDIO_UNLOCKED=true;ensureAudioCtx();
   ensureGhostAudio();ensureTransmitAudio();
@@ -939,13 +1128,16 @@ function unlockAudio(){
     AUDIO_CTX.resume().then(()=>updateMainBgmForPage()).catch(()=>updateMainBgmForPage());
   }else{updateMainBgmForPage();}
 }
-
 window.addEventListener('pointerdown',unlockAudio,{passive:true,capture:true});
 window.addEventListener('touchstart',unlockAudio,{passive:true,capture:true});
 window.addEventListener('click',unlockAudio,{passive:true,capture:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateMainBgmForPage();});
 
+/* ══════════════════════════════════════════════════════
+   SHOW PAGE
+══════════════════════════════════════════════════════ */
 function show(id,cb){
+  if(id!=='p-review')pauseReviewVideo();
   ALL_PAGES.forEach(p=>document.getElementById(p).classList.remove('active'));
   document.getElementById(id).classList.add('active');
   ACTIVE_PAGE=id;
@@ -955,40 +1147,134 @@ function show(id,cb){
 }
 
 /* ══════════════════════════════════════════════════════
-   COOLDOWN LOGIC
+   BACKEND INTEGRATION
 ══════════════════════════════════════════════════════ */
-const COOLDOWN_MS=24*60*60*1000;
-let cdTicker=null;
+const API_BASE = window.location.origin;
+let WISH_ID = localStorage.getItem('girigo_wish_id') || null;
 
-function getCooldownRemaining(){
-  const ts=parseInt(localStorage.getItem('girigo_ts')||'0');if(!ts)return 0;
-  return Math.max(0,COOLDOWN_MS-(Date.now()-ts));
+function persistWishSubmission(data){
+  WISH_ID = data.wishId;
+  localStorage.setItem('girigo_wish_id', WISH_ID);
+  localStorage.setItem('girigo_submitted_at', Date.now().toString());
+  localStorage.removeItem('girigo_granted');
 }
-function setCooldownNow(){localStorage.setItem('girigo_ts',Date.now().toString());localStorage.removeItem('girigo_granted');}
-function isInCooldown(){return getCooldownRemaining()>0;}
 
-function startCooldownUI(){if(cdTicker)clearInterval(cdTicker);updateCooldownUI();cdTicker=setInterval(updateCooldownUI,1000);}
+function loadSupabaseClient(){
+  if(window.supabase&&window.supabase.createClient)return Promise.resolve();
+  return new Promise((resolve,reject)=>{
+    const existing=document.querySelector('script[data-supabase-js]');
+    if(existing){
+      existing.addEventListener('load',()=>resolve(),{once:true});
+      existing.addEventListener('error',()=>reject(new Error('supabase client failed')),{once:true});
+      return;
+    }
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.async=true;s.dataset.supabaseJs='1';
+    s.onload=()=>resolve();
+    s.onerror=()=>reject(new Error('supabase client failed'));
+    document.head.appendChild(s);
+  });
+}
 
-function updateCooldownUI(){
-  const rem=getCooldownRemaining();
-  const expiredEl=document.getElementById('cd-expired');
-  const timeEl=document.getElementById('cd-time');
-  const arc=document.getElementById('cd-arc');
-  const ring=document.querySelector('.cd-ring-wrap');
-  if(rem<=0){
-    clearInterval(cdTicker);timeEl.textContent='00:00:00';
-    ring.style.setProperty('--cd-progress','1');
-    arc.style.strokeDashoffset='0';expiredEl.classList.add('show');
-    updateRedVeil('p-cooldown'); // update veil when expired
-    return;
+async function submitWishViaSupabase(videoBlob,durationSec){
+  const initRes=await fetch(`${API_BASE}/api/wish/upload-url`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contentType:videoBlob.type||'video/webm',size:videoBlob.size||0})
+  });
+  if(!initRes.ok)throw new Error('supabase upload unavailable');
+  const upload=await initRes.json();
+  await loadSupabaseClient();
+  const client=window.supabase.createClient(upload.supabaseUrl,upload.anonKey);
+  const {error:uploadError}=await client.storage
+    .from(upload.bucket)
+    .uploadToSignedUrl(upload.path,upload.token,videoBlob,{contentType:videoBlob.type||'video/webm'});
+  if(uploadError)throw uploadError;
+
+  const completeRes=await fetch(`${API_BASE}/api/wish/complete`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      wishId:upload.wishId,
+      path:upload.path,
+      fileName:upload.fileName,
+      durationSec,
+      size:videoBlob.size||0
+    })
+  });
+  if(!completeRes.ok)throw new Error('oracle save failed');
+  return completeRes.json();
+}
+
+async function submitWishViaServer(videoBlob,durationSec){
+  const fd = new FormData();
+  fd.append('video', videoBlob, 'wish.webm');
+  fd.append('durationSec', durationSec.toString());
+  const res = await fetch(`${API_BASE}/api/wish`, { method: 'POST', body: fd });
+  if(!res.ok) throw new Error('oracle offline');
+  return res.json();
+}
+
+async function submitWishToOracle(videoBlob, durationSec){
+  try {
+    let data;
+    try{data=await submitWishViaSupabase(videoBlob,durationSec);}
+    catch{data=await submitWishViaServer(videoBlob,durationSec);}
+    persistWishSubmission(data);
+    return data;
+  } catch(e) {
+    // Fallback: store locally if server unreachable
+    console.warn('Oracle server offline — local fallback');
+    WISH_ID = 'local_' + Date.now();
+    localStorage.setItem('girigo_wish_id', WISH_ID);
+    localStorage.setItem('girigo_submitted_at', Date.now().toString());
+    localStorage.removeItem('girigo_granted');
+    return {
+      wishId: WISH_ID, phase: 'submission',
+      phaseLabel: '봉헌 수신됨', symbol: '⊙',
+      message: '봉헌이 신탁에 전달되었습니다.'
+    };
   }
-  expiredEl.classList.remove('show');
-  const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);
-  timeEl.textContent=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-  const pct=1-(rem/COOLDOWN_MS);
-  ring.style.setProperty('--cd-progress',pct.toString());
-  arc.style.strokeDashoffset=(553*(1-pct)).toString();
-  updateRedVeil('p-cooldown'); // update veil opacity
+}
+
+async function fetchOracleStatus(){
+  if(!WISH_ID) return null;
+  if(WISH_ID.startsWith('local_')){
+    // Local fallback evaluation after ~10s for demo purposes
+    const submittedAt = parseInt(localStorage.getItem('girigo_submitted_at')||'0');
+    const elapsed = Date.now() - submittedAt;
+    const DEMO_GRANT_MS = 10000; // 10s demo
+    if(elapsed >= DEMO_GRANT_MS){
+      const score = (submittedAt % 7);
+      const granted = score >= 3;
+      return {
+        wishId: WISH_ID, phase: granted ? 'granted' : 'contemplation',
+        phaseLabel: granted ? '현현 허락됨' : '침묵 속 숙고',
+        symbol: granted ? '✦' : '◌',
+        granted: granted ? true : null,
+        remainingMs: Math.max(0, DEMO_GRANT_MS - elapsed),
+        oracleText: granted
+          ? '신탁이 허락하였습니다. 소원이 이루어집니다.'
+          : '신탁이 봉헌을 살피고 있습니다. 기다리십시오.',
+        submittedAt,
+      };
+    }
+    return {
+      wishId: WISH_ID, phase: 'submission',
+      phaseLabel: '봉헌 수신됨', symbol: '⊙',
+      granted: null, remainingMs: DEMO_GRANT_MS - elapsed,
+      oracleText: '봉헌이 신탁에 전달되었습니다.',
+      submittedAt,
+    };
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/wish/${WISH_ID}`);
+    if(!res.ok) throw new Error('not found');
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -996,6 +1282,7 @@ function updateCooldownUI(){
 ══════════════════════════════════════════════════════ */
 function goSplash(){
   killStream();
+  // If granted, show veil on splash too
   show('p-splash',()=>{
     const c=document.getElementById('logo-canvas');c.width=256;c.height=256;
     startAnim([{el:c,size:256}],true);
@@ -1003,7 +1290,11 @@ function goSplash(){
 }
 
 function tryGoCamera(){
-  if(isInCooldown()){goCooldown();return;}
+  const submittedAt = parseInt(localStorage.getItem('girigo_submitted_at')||'0');
+  const hasActive = submittedAt && (Date.now() - submittedAt < 24*3600*1000);
+  const granted = localStorage.getItem('girigo_granted')==='1';
+  if(granted){ goGrantedPage(); return; }
+  if(hasActive){ goOraclePage(); return; }
   show('p-cam',async()=>{
     try{
       stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:true});
@@ -1012,19 +1303,100 @@ function tryGoCamera(){
   });
 }
 
-function goCooldown(){show('p-cooldown',()=>{startCooldownUI();});}
+function goOraclePage(){
+  show('p-oracle',()=>{ updateOracleUI(); });
+}
 
-function checkGranted(){
-  const ts=parseInt(localStorage.getItem('girigo_ts')||'0');
-  const elapsed=Date.now()-ts;const testMode=elapsed>30000;const granted=testMode&&Math.random()>0.45;
-  if(granted){
-    localStorage.removeItem('girigo_ts');localStorage.setItem('girigo_granted','1');
-    if(cdTicker)clearInterval(cdTicker);showResult(true);
-  }else{
-    const el=document.getElementById('cd-time');
-    el.style.color='rgb(255,80,80)';el.style.transition='color .1s';
-    setTimeout(()=>{el.style.color='rgb(255,60,60)';el.style.transition='color .6s';},500);
+function goGrantedPage(){
+  show('p-granted',()=>{
+    startGrantedTimer();
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   ORACLE WAITING PAGE
+══════════════════════════════════════════════════════ */
+async function updateOracleUI(){
+  const data = await fetchOracleStatus();
+  if(!data) return;
+
+  document.getElementById('oracle-symbol-display').textContent = data.symbol || '⊙';
+  document.getElementById('oracle-phase-label').textContent = data.phaseLabel || '';
+  document.getElementById('oracle-msg').textContent = data.oracleText || '';
+
+  if(data.granted === true){
+    localStorage.setItem('girigo_granted','1');
+    localStorage.setItem('girigo_granted_at', Date.now().toString());
+    document.getElementById('oracle-granted-msg').classList.add('show');
+    setRedVeil(false); // not yet — show veil only on granted page
   }
+}
+
+async function checkOracleStatus(){
+  const btn = document.querySelector('.oracle-check-btn');
+  if(btn){ btn.textContent='신탁을 읽는 중…'; btn.disabled=true; }
+  await updateOracleUI();
+  setTimeout(()=>{
+    if(btn){ btn.textContent='신탁 확인하기'; btn.disabled=false; }
+  },1800);
+
+  // If granted, auto navigate after brief pause
+  if(localStorage.getItem('girigo_granted')==='1'){
+    setTimeout(goGrantedPage, 2200);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   GRANTED TIMER — 7-day manifestation countdown
+   Starts from when the wish was granted
+══════════════════════════════════════════════════════ */
+const MANIFEST_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+let grtTicker = null;
+
+function startGrantedTimer(){
+  setRedVeil(true); // NOW we show the veil
+  if(grtTicker) clearInterval(grtTicker);
+  updateGrantedUI();
+  grtTicker = setInterval(updateGrantedUI, 1000);
+}
+
+function updateGrantedUI(){
+  const grantedAt = parseInt(localStorage.getItem('girigo_granted_at')||'0');
+  if(!grantedAt){ clearInterval(grtTicker); return; }
+
+  const elapsed = Date.now() - grantedAt;
+  const remaining = Math.max(0, MANIFEST_MS - elapsed);
+  const pct = Math.min(1, elapsed / MANIFEST_MS);
+
+  const timeEl = document.getElementById('grt-time');
+  const arcEl  = document.getElementById('grt-arc');
+  const wrap   = document.getElementById('grt-ring-wrap');
+  const manifestEl = document.getElementById('grt-manifest-msg');
+
+  if(remaining <= 0){
+    clearInterval(grtTicker);
+    timeEl.textContent = '현현';
+    arcEl.style.strokeDashoffset = '0';
+    wrap.style.setProperty('--grt-progress','1');
+    manifestEl.classList.add('show');
+    document.getElementById('grt-msg').style.opacity = '0';
+    return;
+  }
+
+  const totalSec = Math.floor(remaining / 1000);
+  const d = Math.floor(totalSec / 86400);
+  const h = Math.floor((totalSec % 86400) / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+
+  if(d > 0){
+    timeEl.textContent = `${d}일 ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+  } else {
+    timeEl.textContent = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  }
+
+  wrap.style.setProperty('--grt-progress', pct.toString());
+  arcEl.style.strokeDashoffset = (553 * (1 - pct)).toString();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1063,7 +1435,10 @@ function stopRec(){
     blob=new Blob(chunks,{type});
     if(blobURL)URL.revokeObjectURL(blobURL);
     blobURL=URL.createObjectURL(blob);
-    document.getElementById('prev-vid').src=blobURL;
+    // Load video and show review maximized
+    const prevVid = document.getElementById('prev-vid');
+    prevVid.src = blobURL;
+    prevVid.load();
     show('p-review');
   };
 }
@@ -1080,30 +1455,61 @@ function showTimer(){
   updateMainBgmForPage();
 }
 
-function retake(){show('p-cam');}
+function retake(){
+  show('p-cam');
+  // Restart camera if needed
+  if(!stream){
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:true})
+      .then(s=>{stream=s;document.getElementById('vid').srcObject=s;})
+      .catch(()=>document.getElementById('cam-err').classList.add('show'));
+  }
+}
 
 /* ══════════════════════════════════════════════════════
-   TRANSMIT → RESULT
+   TRANSMIT → RESULT (with backend upload)
 ══════════════════════════════════════════════════════ */
-function transmit(){
-  killStream();setCooldownNow();
+async function transmit(){
+  if(!blob) return;
+  pauseReviewVideo();
+  killStream();
+
+  // Disable button to prevent double-tap
+  const btn = document.getElementById('transmit-btn');
+  if(btn){ btn.disabled=true; }
+  document.getElementById('rev-uploading').classList.add('show');
+  document.querySelector('.rev-actions').style.opacity='0.4';
+
   playTransmitSound();
-  HAS_SUBMITTED = true;
+
   show('p-transmit',()=>{
     const tc=document.getElementById('tx-canvas');tc.width=256;tc.height=256;
     startFlipLoop([{el:tc,size:256}]);
   });
-  setTimeout(()=>{document.getElementById('dl-link').href=blobURL||'#';showResult(false);},3200);
+
+  // Upload to oracle server
+  const oracleData = await submitWishToOracle(blob, recSec || 5);
+
+  setTimeout(()=>{
+    document.getElementById('dl-link').href=blobURL||'#';
+    showResult(oracleData);
+  }, 3200);
 }
 
-function showResult(granted){
+function showResult(oracleData){
   show('p-result',()=>{
     stopAnim();
     const rc=document.getElementById('res-canvas');rc.width=256;rc.height=256;renderStatic(rc,256);
     document.getElementById('res-status-text').textContent='소원이 전달되었습니다';
-    document.getElementById('granted-badge-wrap').innerHTML=granted
-      ?`<div class="granted-badge"><div class="granted-star"></div><div class="granted-star" style="animation-delay:.5s"></div></div>`
-      :`<div style="font-size:clamp(12px,3vw,15px);letter-spacing:.35em;color:rgba(255,200,200,.65);">24시간 후 확인하세요</div>`;
+
+    // Oracle badge
+    if(oracleData){
+      document.getElementById('ob-symbol').textContent  = oracleData.symbol || '⊙';
+      document.getElementById('ob-phase').textContent   = oracleData.phaseLabel || '';
+      document.getElementById('ob-text').textContent    = oracleData.message || '';
+    }
+
+    document.getElementById('granted-badge-wrap').innerHTML =
+      `<div style="font-size:clamp(12px,3vw,15px);letter-spacing:.35em;color:rgba(255,200,200,.65);">신탁이 침묵 속에 봉헌을 살핍니다</div>`;
   });
 }
 
@@ -1114,9 +1520,18 @@ window.addEventListener('DOMContentLoaded',()=>{
   ensureAudioCtx();ensureMainBgm();
   loadHandAsset().finally(()=>{renderRecLogo();buildAppIconFromHand();});
   renderRecLogo();triggerStartupFlash();
-  if(isInCooldown()){
-    show('p-cooldown',()=>{startCooldownUI();});
-  }else{
+
+  const granted = localStorage.getItem('girigo_granted')==='1';
+  const submittedAt = parseInt(localStorage.getItem('girigo_submitted_at')||'0');
+  const hasActive = submittedAt && (Date.now() - submittedAt < 24*3600*1000);
+
+  if(granted){
+    // Wish was previously granted — go to granted page with veil
+    show('p-granted',()=>{ startGrantedTimer(); });
+  } else if(hasActive){
+    // Still waiting for oracle
+    show('p-oracle',()=>{ updateOracleUI(); });
+  } else {
     show('p-splash',()=>{
       const c=document.getElementById('logo-canvas');c.width=256;c.height=256;
       startAnim([{el:c,size:256}],true);playMainBgm();
@@ -1125,6 +1540,31 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 
 window.addEventListener('pageshow',()=>{triggerStartupFlash();updateMainBgmForPage();});
+
+function installAdminUnlock(){
+  const MAX_BUFFER=96,MIN_PROBE=8;
+  let buffer='',pending=false,lastCandidate='';
+  async function probeAdminUnlock(){
+    if(pending||buffer.length<MIN_PROBE||buffer===lastCandidate)return;
+    const candidate=buffer;
+    pending=true;lastCandidate=candidate;
+    try{
+      const res=await fetch('/api/admin/unlock',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({candidate})
+      });
+      if(res.ok)window.location.href='/admin';
+    }catch{}finally{pending=false;}
+  }
+  window.addEventListener('keydown',async ev=>{
+    if(ev.defaultPrevented||ev.metaKey||ev.ctrlKey||ev.altKey)return;
+    if(ev.key.length!==1)return;
+    buffer=(buffer+ev.key).slice(-MAX_BUFFER);
+    probeAdminUnlock();
+  });
+}
+installAdminUnlock();
 </script>
 </body>
 </html>
